@@ -1,7 +1,7 @@
 name: sarmay_player
-description: "A new Flutter plugin project."
+description: "基于media_kit的播放器"
 version: 0.0.1
-homepage:
+homepage: https://github.com/Sarmay/sarmay_player.git
 
 environment:
   sdk: ^3.8.1

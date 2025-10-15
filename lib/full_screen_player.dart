@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:media_kit_video/media_kit_video.dart';
@@ -50,7 +51,7 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
     super.dispose();
   }
 
-  @override
+  // @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       // 应用从后台回到前台时，重新设置方向
@@ -118,7 +119,7 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
       SystemChrome.setPreferredOrientations([
         DeviceOrientation.landscapeLeft,
         DeviceOrientation.landscapeRight,
-      ]).then((_val) {
+      ]).then((val) {
         if (_isPlaying && Platform.isIOS) {
           widget.player.pause();
           widget.player.play();
@@ -128,7 +129,9 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
       // 可选：隐藏状态栏（双重保险）
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
     } catch (e) {
-      print('设置全屏模式失败: $e');
+      if (kDebugMode) {
+        print('设置全屏模式失败: $e');
+      }
     }
   }
 
@@ -148,7 +151,9 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
         overlays: SystemUiOverlay.values,
       );
     } catch (e) {
-      print('恢复竖屏模式失败: $e');
+      if (kDebugMode) {
+        print('恢复竖屏模式失败: $e');
+      }
     }
   }
 

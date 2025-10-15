@@ -105,7 +105,9 @@ class MediaPlayer {
     });
 
     _player.stream.error.listen((String error) {
-      print("play error: $error");
+      if (kDebugMode) {
+        print("play error: $error");
+      }
       if (!_errorController.isClosed) {
         _errorController.add(error);
       }

@@ -1,0 +1,1 @@
+enum DevicesType { all, renderer, server }

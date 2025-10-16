@@ -4,6 +4,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+import 'package:sarmay_player/other_data.dart';
+
+export 'package:media_kit/media_kit.dart' show PlayerConfiguration;
+export 'package:media_kit_video/media_kit_video.dart'
+    show VideoControllerConfiguration;
+
+export 'package:sarmay_player/other_data.dart';
 
 class MediaPlayer {
   final Player _player;
@@ -18,6 +25,8 @@ class MediaPlayer {
   Duration _duration = Duration.zero;
   Duration? _tipTime;
   Widget? _tipWidget;
+  Widget? _castWidget;
+  DevicesType _castDevicesType = DevicesType.all;
 
   // 自定义初始化状态流
   final StreamController<String> _errorController =
@@ -40,9 +49,15 @@ class MediaPlayer {
   final StreamController<bool> _showTipController =
       StreamController<bool>.broadcast();
 
-  MediaPlayer({PlayerConfiguration configuration = const PlayerConfiguration()})
-    : _player = Player(configuration: configuration) {
-    _videoController = VideoController(_player);
+  MediaPlayer({
+    PlayerConfiguration playerConfig = const PlayerConfiguration(),
+    VideoControllerConfiguration controllerConfig =
+        const VideoControllerConfiguration(),
+  }) : _player = Player(configuration: playerConfig) {
+    _videoController = VideoController(
+      _player,
+      configuration: controllerConfig,
+    );
     _setupStreams();
   }
 
@@ -138,11 +153,33 @@ class MediaPlayer {
       _mediaUrl = mediaUrl;
       _isInitialized = false;
       _showTip = false;
-      _initializedController.add(false);
-      _showTipController.add(false);
+      if (!_initializedController.isClosed) {
+        _initializedController.add(false);
+      }
+      if (!_showTipController.isClosed) {
+        _showTipController.add(false);
+      }
       _player.stop();
       _tipTime = mediaUrl.tipTime;
       _tipWidget = mediaUrl.tipWidget;
+      _castWidget = mediaUrl.castWidget;
+      _castDevicesType = mediaUrl.castDevicesType;
+      return _player.open(Media(mediaUrl.url), play: play);
+    } catch (e) {
+      _errorController.add(e.toString());
+      return Future.value();
+    }
+  }
+
+  Future<void> setUrl(MediaUrl mediaUrl, {bool play = true}) {
+    _checkDisposed();
+    try {
+      _playing = play;
+      _mediaUrl = mediaUrl;
+      _tipTime = mediaUrl.tipTime;
+      _tipWidget = mediaUrl.tipWidget;
+      _castWidget = mediaUrl.castWidget;
+      _castDevicesType = mediaUrl.castDevicesType;
       return _player.open(Media(mediaUrl.url), play: play);
     } catch (e) {
       _errorController.add(e.toString());
@@ -175,6 +212,12 @@ class MediaPlayer {
 
   Future<void> seek(Duration position) {
     _checkDisposed();
+    if (_playing) {
+      _isBuffering = true;
+      if (!_bufferingController.isClosed) {
+        _bufferingController.add(_isBuffering);
+      }
+    }
     return _player.seek(position);
   }
 
@@ -201,6 +244,11 @@ class MediaPlayer {
     } else {
       _player.seek(Duration.zero);
     }
+  }
+
+  void setDevicesType(DevicesType devicesType) {
+    _checkDisposed();
+    _castDevicesType = devicesType;
   }
 
   // 流数据
@@ -267,6 +315,16 @@ class MediaPlayer {
     return _tipWidget;
   }
 
+  Widget? get castWidget {
+    _checkDisposed();
+    return _castWidget;
+  }
+
+  DevicesType get castDevicesType {
+    _checkDisposed();
+    return _castDevicesType;
+  }
+
   bool get showTip {
     _checkDisposed();
     return _showTip;
@@ -302,13 +360,47 @@ class MediaPlayer {
     return _isDisposed;
   }
 
-  // 自定义功能
-  Future<void> customSeek(Duration position) async {
-    _checkDisposed();
-    if (kDebugMode) {
-      print('Custom seek to: $position');
+  // 停止并初始化
+  Future<void> stopAndInit() async {
+    try {
+      _checkDisposed();
+      _playing = false;
+      _mediaUrl = MediaUrl(url: '');
+      _isInitialized = false;
+      _showTip = false;
+      if (!_initializedController.isClosed) {
+        _initializedController.add(false);
+      }
+      if (!_showTipController.isClosed) {
+        _showTipController.add(false);
+      }
+      _tipTime = null;
+      _tipWidget = null;
+      _castWidget = null;
+      _castDevicesType = DevicesType.all;
+      return await _player.stop();
+    } catch (e) {
+      if (kDebugMode) {
+        print("play error: $e");
+      }
+      return Future.value();
     }
-    await _player.seek(position);
+  }
+
+  // 关闭
+  Future<void> closeTip() {
+    _checkDisposed();
+    if (_showTip) {
+      _showTip = false;
+      _tipTime = null;
+      _tipWidget = null;
+      _castWidget = null;
+      if (!_showTipController.isClosed) {
+        _showTipController.add(false);
+      }
+      return _player.play();
+    }
+    return Future.value();
   }
 
   Future<void> jumpForward({int seconds = 10}) async {
@@ -346,24 +438,37 @@ class MediaPlayer {
 }
 
 class MediaUrl {
-  const MediaUrl({required this.url, this.title, this.tipTime, this.tipWidget});
+  const MediaUrl({
+    required this.url,
+    this.title,
+    this.tipTime,
+    this.tipWidget,
+    this.castWidget,
+    this.castDevicesType = DevicesType.all,
+  });
 
   final String? title;
   final String url;
   final Duration? tipTime;
   final Widget? tipWidget;
+  final Widget? castWidget;
+  final DevicesType castDevicesType;
 
   MediaUrl.fromJson(Map<String, dynamic> json)
     : title = json['title'],
       url = json['url'],
       tipTime = json['tipTime'],
-      tipWidget = json['tipWidget'];
+      tipWidget = json['tipWidget'],
+      castWidget = json['castWidget'],
+      castDevicesType = json['castDevicesType'];
 
   Map<String, dynamic> toJson() => {
     'title': title,
     'url': url,
     'tipTime': tipTime,
     'tipWidget': tipWidget,
+    'castWidget': castWidget,
+    'castDevicesType': castDevicesType,
   };
 
   @override

@@ -3,7 +3,6 @@ import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:sarmay_player/custom_video_controls.dart';
 import 'package:sarmay_player/media_player.dart';
-
 export 'package:sarmay_player/media_player.dart';
 
 /// 初始化media_kit，必须在runApp之前调用

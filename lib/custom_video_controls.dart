@@ -352,6 +352,9 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
     _castOverlayEntry = OverlayEntry(
       builder: (context) => CastDeviceDialog(
         playUrl: widget.player.mediaUrl.url,
+        tipTime: widget.player.tipTime,
+        castWidget: widget.player.castWidget,
+        devicesType: widget.player.castDevicesType,
         onClose: () {
           _castOverlayEntry?.remove();
           _castOverlayEntry = null;

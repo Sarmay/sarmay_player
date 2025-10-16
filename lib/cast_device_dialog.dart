@@ -3,16 +3,21 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:media_cast_dlna/media_cast_dlna.dart';
+import 'package:sarmay_player/other_data.dart';
 
 class CastDeviceDialog extends StatefulWidget {
   final String playUrl;
-  final bool onlyRenderer;
+  final Duration? tipTime;
+  final Widget? castWidget;
+  final DevicesType devicesType;
   final VoidCallback onClose;
 
   const CastDeviceDialog({
     super.key,
     required this.playUrl,
-    this.onlyRenderer = false,
+    this.tipTime,
+    this.castWidget,
+    required this.devicesType,
     required this.onClose,
   });
 
@@ -78,130 +83,155 @@ class _CastDeviceDialogState extends State<CastDeviceDialog> {
             borderRadius: BorderRadius.circular(8),
           ),
           margin: EdgeInsets.only(left: 8, right: 8),
-          child: Column(
+          child: Column(children: _columnChild()),
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _columnChild() {
+    if (widget.tipTime != null) {
+      return [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.blue,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(8),
+              topRight: Radius.circular(8),
+            ),
+          ),
+          child: Row(
             children: [
-              // 标题栏
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.blue,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(8),
-                    topRight: Radius.circular(8),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.cast, color: Colors.white),
-                    const SizedBox(width: 8),
-                    const Text(
-                      '选择投屏设备',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white),
-                      onPressed: widget.onClose,
-                    ),
-                  ],
+              const Icon(Icons.cast, color: Colors.white),
+              const SizedBox(width: 8),
+              const Text(
+                '选择投屏设备',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-
-              // 搜索状态指示器
-              if (_isDiscovering)
-                Container(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  color: Colors.blue[50],
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        '正在搜索设备...',
-                        style: TextStyle(color: Colors.blue, fontSize: 14),
-                      ),
-                    ],
-                  ),
-                ),
-
-              // 设备列表
-              Expanded(child: _buildDeviceList()),
-
-              // 底部按钮
-              Container(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    if (_isDiscovering)
-                      ElevatedButton.icon(
-                        icon: const Icon(Icons.stop, color: Colors.white),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                        ),
-                        label: const Text(
-                          '停止搜索',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                        onPressed: _stopDiscovery,
-                      )
-                    else
-                      ElevatedButton.icon(
-                        icon: const Icon(Icons.refresh, color: Colors.white),
-                        label: const Text(
-                          '重新搜索',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.cyan,
-                        ),
-                        onPressed: _refreshDevices,
-                      ),
-                    const Spacer(),
-                    if (_selectedDevice != null && !_isCasting)
-                      ElevatedButton.icon(
-                        icon: const Icon(
-                          Icons.cast,
-                          size: 20,
-                          color: Colors.white,
-                        ),
-                        label: const Text(
-                          '开始投屏',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                        onPressed: _startCasting,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                        ),
-                      ),
-                    if (_isCasting)
-                      ElevatedButton.icon(
-                        icon: const Icon(Icons.stop, color: Colors.white),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                        ),
-                        label: const Text(
-                          '停止投屏',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                        onPressed: _stopCasting,
-                      ),
-                  ],
-                ),
+              const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.close, color: Colors.white),
+                onPressed: widget.onClose,
               ),
             ],
           ),
         ),
+        if (widget.castWidget != null) widget.castWidget! else Text("默认提示信息"),
+      ];
+    }
+
+    return [
+      // 标题栏
+      Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.blue,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(8),
+            topRight: Radius.circular(8),
+          ),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.cast, color: Colors.white),
+            const SizedBox(width: 8),
+            const Text(
+              '选择投屏设备',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const Spacer(),
+            IconButton(
+              icon: const Icon(Icons.close, color: Colors.white),
+              onPressed: widget.onClose,
+            ),
+          ],
+        ),
       ),
-    );
+
+      // 搜索状态指示器
+      if (_isDiscovering)
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          color: Colors.blue[50],
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                '正在搜索设备...',
+                style: TextStyle(color: Colors.blue, fontSize: 14),
+              ),
+            ],
+          ),
+        ),
+
+      // 设备列表
+      Expanded(child: _buildDeviceList()),
+
+      // 底部按钮
+      Container(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            if (_isDiscovering)
+              ElevatedButton.icon(
+                icon: const Icon(Icons.stop, color: Colors.white),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                label: const Text(
+                  '停止搜索',
+                  style: TextStyle(color: Colors.white),
+                ),
+                onPressed: _stopDiscovery,
+              )
+            else
+              ElevatedButton.icon(
+                icon: const Icon(Icons.refresh, color: Colors.white),
+                label: const Text(
+                  '重新搜索',
+                  style: TextStyle(color: Colors.white),
+                ),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.cyan),
+                onPressed: _refreshDevices,
+              ),
+            const Spacer(),
+            if (_selectedDevice != null && !_isCasting)
+              ElevatedButton.icon(
+                icon: const Icon(Icons.cast, size: 20, color: Colors.white),
+                label: const Text(
+                  '开始投屏',
+                  style: TextStyle(color: Colors.white),
+                ),
+                onPressed: _startCasting,
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+              ),
+            if (_isCasting)
+              ElevatedButton.icon(
+                icon: const Icon(Icons.stop, color: Colors.white),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                label: const Text(
+                  '停止投屏',
+                  style: TextStyle(color: Colors.white),
+                ),
+                onPressed: _stopCasting,
+              ),
+          ],
+        ),
+      ),
+    ];
   }
 
   Widget _buildDeviceList() {
@@ -386,23 +416,33 @@ class _CastDeviceDialogState extends State<CastDeviceDialog> {
           var devices = await _api.getDiscoveredDevices();
           if (mounted) {
             if (devices.isEmpty) {
-              // devices = [
-              //   DlnaDevice(
-              //     udn: DeviceUdn(value: "upnp2"),
-              //     friendlyName: '我的投屏工具2',
-              //     deviceType: 'Media2',
-              //     manufacturerDetails: ManufacturerDetails(manufacturer: '测试2'),
-              //     modelDetails: ModelDetails(modelName: "模式2"),
-              //     ipAddress: IpAddress(value: "10.10.10.3"),
-              //     port: NetworkPort(value: 9800),
-              //   ),
-              // ];
+              devices = [
+                DlnaDevice(
+                  udn: DeviceUdn(value: "upnp1"),
+                  friendlyName: '我的投屏工具1',
+                  deviceType: 'MediaRenderer',
+                  manufacturerDetails: ManufacturerDetails(manufacturer: '测试1'),
+                  modelDetails: ModelDetails(modelName: "模式1"),
+                  ipAddress: IpAddress(value: "10.10.10.2"),
+                  port: NetworkPort(value: 9800),
+                ),
+                DlnaDevice(
+                  udn: DeviceUdn(value: "upnp2"),
+                  friendlyName: '我的投屏工具2',
+                  deviceType: 'MediaServer',
+                  manufacturerDetails: ManufacturerDetails(manufacturer: '测试2'),
+                  modelDetails: ModelDetails(modelName: "模式2"),
+                  ipAddress: IpAddress(value: "10.10.10.3"),
+                  port: NetworkPort(value: 9800),
+                ),
+              ];
             }
-            if (widget.onlyRenderer) {
-              _devices = devices
-                  .where(
-                    (device) => device.deviceType.contains('MediaRenderer'),
-                  )
+            if (widget.devicesType != DevicesType.all) {
+              String containsStr = widget.devicesType == DevicesType.renderer
+                  ? 'MediaRenderer'
+                  : 'MediaServer';
+              devices = devices
+                  .where((device) => device.deviceType.contains(containsStr))
                   .toList();
             }
             setState(() => _devices = devices);

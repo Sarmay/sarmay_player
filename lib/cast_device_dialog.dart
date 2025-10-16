@@ -416,26 +416,26 @@ class _CastDeviceDialogState extends State<CastDeviceDialog> {
           var devices = await _api.getDiscoveredDevices();
           if (mounted) {
             if (devices.isEmpty) {
-              devices = [
-                DlnaDevice(
-                  udn: DeviceUdn(value: "upnp1"),
-                  friendlyName: '我的投屏工具1',
-                  deviceType: 'MediaRenderer',
-                  manufacturerDetails: ManufacturerDetails(manufacturer: '测试1'),
-                  modelDetails: ModelDetails(modelName: "模式1"),
-                  ipAddress: IpAddress(value: "10.10.10.2"),
-                  port: NetworkPort(value: 9800),
-                ),
-                DlnaDevice(
-                  udn: DeviceUdn(value: "upnp2"),
-                  friendlyName: '我的投屏工具2',
-                  deviceType: 'MediaServer',
-                  manufacturerDetails: ManufacturerDetails(manufacturer: '测试2'),
-                  modelDetails: ModelDetails(modelName: "模式2"),
-                  ipAddress: IpAddress(value: "10.10.10.3"),
-                  port: NetworkPort(value: 9800),
-                ),
-              ];
+              // devices = [
+              //   DlnaDevice(
+              //     udn: DeviceUdn(value: "upnp1"),
+              //     friendlyName: '我的投屏工具1',
+              //     deviceType: 'MediaRenderer',
+              //     manufacturerDetails: ManufacturerDetails(manufacturer: '测试1'),
+              //     modelDetails: ModelDetails(modelName: "模式1"),
+              //     ipAddress: IpAddress(value: "10.10.10.2"),
+              //     port: NetworkPort(value: 9800),
+              //   ),
+              //   DlnaDevice(
+              //     udn: DeviceUdn(value: "upnp2"),
+              //     friendlyName: '我的投屏工具2',
+              //     deviceType: 'MediaServer',
+              //     manufacturerDetails: ManufacturerDetails(manufacturer: '测试2'),
+              //     modelDetails: ModelDetails(modelName: "模式2"),
+              //     ipAddress: IpAddress(value: "10.10.10.3"),
+              //     port: NetworkPort(value: 9800),
+              //   ),
+              // ];
             }
             if (widget.devicesType != DevicesType.all) {
               String containsStr = widget.devicesType == DevicesType.renderer

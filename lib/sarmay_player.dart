@@ -14,6 +14,7 @@ class SarmayPlayer extends StatefulWidget {
   final MediaPlayer player;
   final VideoController controller;
   final void Function(bool completed)? onCompleted;
+  final void Function(bool initialized)? onInitialized;
   final void Function(String errMsg)? onError;
 
   const SarmayPlayer({
@@ -21,6 +22,7 @@ class SarmayPlayer extends StatefulWidget {
     required this.player,
     required this.controller,
     this.onCompleted,
+    this.onInitialized,
     this.onError,
   });
 
@@ -41,6 +43,9 @@ class _SarmayPlayerState extends State<SarmayPlayer> {
 
   void setupStreams() {
     widget.player.initialized.listen((bool initialized) {
+      if (widget.onInitialized != null) {
+        widget.onInitialized!(initialized);
+      }
       if (mounted) {
         setState(() {
           _hasError = false;

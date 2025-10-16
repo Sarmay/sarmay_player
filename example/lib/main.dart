@@ -45,16 +45,16 @@ class _PlayerScreenState extends State<PlayerScreen> {
       MediaUrl(
         title: "Aliyun",
         url: "http://player.alicdn.com/video/aliyunmedia.mp4",
-        tipTime: Duration(seconds: 30),
-        tipWidget: InkWell(
-          onTap: () {
-            print("点击了呀");
-            player.closeTip();
-          },
-          child: Container(color: Colors.white, child: Text("测试")),
-        ),
-        castWidget: Text("请先付费吧"),
-        castDevicesType: DevicesType.all,
+        // tipTime: Duration(seconds: 30),
+        // tipWidget: InkWell(
+        //   onTap: () {
+        //     print("点击了呀");
+        //     player.closeTip();
+        //   },
+        //   child: Container(color: Colors.white, child: Text("测试")),
+        // ),
+        // castWidget: Text("请先付费吧"),
+        // castDevicesType: DevicesType.all,
       ),
       MediaUrl(
         title: "m3u8",
@@ -150,7 +150,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
     curPlay = sampleList[curIndex];
     // 初始化时预加载第一个视频
     super.initState();
-    player.open(curPlay);
+    player.setUrlAndSeek(curPlay, Duration(seconds: 56), play: false);
   }
 
   @override
@@ -164,18 +164,20 @@ class _PlayerScreenState extends State<PlayerScreen> {
       curIndex = (curIndex - 1) % sampleList.length;
       if (curIndex < 0) curIndex = sampleList.length - 1;
       curPlay = sampleList[curIndex];
-      player.open(curPlay, play: true);
     });
+    // player.open(curPlay, play: true);
+    player.setUrlAndSeek(curPlay, Duration(seconds: 30), play: true);
   }
 
   void playNext() async {
     await player.stopAndInit();
+    setState(() {
+      curIndex = (curIndex + 1) % sampleList.length;
+      curPlay = sampleList[curIndex];
+    });
     Future.delayed(Duration(seconds: 10), () {
-      setState(() {
-        curIndex = (curIndex + 1) % sampleList.length;
-        curPlay = sampleList[curIndex];
-        player.open(curPlay, play: true);
-      });
+      // player.open(curPlay, play: true);
+      player.setUrlAndSeek(curPlay, Duration(seconds: 30), play: true);
     });
   }
 
@@ -184,8 +186,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
       setState(() {
         curIndex = index;
         curPlay = sampleList[curIndex];
-        player.open(curPlay, play: true);
       });
+      // player.open(curPlay, play: true);
+      player.setUrlAndSeek(curPlay, Duration(seconds: 30), play: true);
     }
   }
 
@@ -206,17 +209,28 @@ class _PlayerScreenState extends State<PlayerScreen> {
                     playNext();
                   }
                 },
+                onInitialized: (bool initialized) {
+                  print("主页面initialized：$initialized");
+                  if (initialized) {
+                    // player.seek(Duration(seconds: 56));
+                  }
+                },
                 onError: (String errMsg) {
                   print("主页面errMsg：$errMsg");
                 },
               ),
               const SizedBox(height: 16),
               // 显示当前播放的视频标题
-              Text(
-                "当前播放: ${curPlay.title ?? '未命名视频'}",
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+              InkWell(
+                onTap: () {
+                  player.seek(Duration(seconds: 56));
+                },
+                child: Text(
+                  "当前播放: ${curPlay.title ?? '未命名视频'}",
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               const SizedBox(height: 16),

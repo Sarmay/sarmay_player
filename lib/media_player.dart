@@ -27,6 +27,7 @@ class MediaPlayer {
   Widget? _tipWidget;
   Widget? _castWidget;
   DevicesType _castDevicesType = DevicesType.all;
+  Duration? _seekPosition;
 
   // 自定义初始化状态流
   final StreamController<String> _errorController =
@@ -84,6 +85,10 @@ class MediaPlayer {
 
     _player.stream.position.listen((Duration position) {
       _position = position;
+      if (_seekPosition != null) {
+        _player.seek(_seekPosition!);
+        _seekPosition = null;
+      }
       if (!_positionController.isClosed) {
         _positionController.add(position);
       }
@@ -185,6 +190,17 @@ class MediaPlayer {
       _errorController.add(e.toString());
       return Future.value();
     }
+  }
+
+  Future<void> setUrlAndSeek(
+    MediaUrl mediaUrl,
+    Duration position, {
+    bool play = true,
+  }) async {
+    await setUrl(mediaUrl, play: play);
+    _position = position;
+    _seekPosition = position;
+    return;
   }
 
   Future<void> play() {

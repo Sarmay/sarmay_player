@@ -216,6 +216,7 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
         backgroundColor: Colors.black,
         body: GestureDetector(
           onTap: _showControlsHandel,
+          behavior: HitTestBehavior.opaque,
           child: Stack(
             children: [
               // 视频播放器
@@ -308,62 +309,70 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
             // 中间播放控制
             Expanded(
               child: Center(
-                child: _isBuffering
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          // 快退
-                          IconButton(
-                            icon: const Icon(
-                              Icons.replay_10,
-                              color: Colors.white,
-                              size: 40,
-                            ),
-                            onPressed: () {
-                              if (!_showControls) {
-                                _showControlsHandel();
-                                return;
-                              }
-                              widget.player.seekBackward();
-                            },
-                          ),
-
-                          // 播放/暂停
-                          IconButton(
-                            icon: Icon(
-                              _isPlaying
-                                  ? Icons.pause
-                                  : Icons.play_circle_filled,
-                              color: Colors.white,
-                              size: 80,
-                            ),
-                            onPressed: () {
-                              if (!_showControls) {
-                                _showControlsHandel();
-                                return;
-                              }
-                              _togglePlayPause();
-                            },
-                          ),
-
-                          // 快进
-                          IconButton(
-                            icon: const Icon(
-                              Icons.forward_10,
-                              color: Colors.white,
-                              size: 40,
-                            ),
-                            onPressed: () {
-                              if (!_showControls) {
-                                _showControlsHandel();
-                                return;
-                              }
-                              widget.player.seekForward();
-                            },
-                          ),
-                        ],
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    // 快退
+                    IconButton(
+                      padding: EdgeInsetsGeometry.zero,
+                      icon: const Icon(
+                        Icons.replay_10,
+                        color: Colors.white,
+                        size: 40,
                       ),
+                      onPressed: () {
+                        if (!_showControls) {
+                          _showControlsHandel();
+                          return;
+                        }
+                        widget.player.seekBackward();
+                      },
+                    ),
+
+                    if (_isBuffering)
+                      const CircularProgressIndicator(color: Colors.white)
+                    else
+                      // 播放/暂停
+                      SizedBox(
+                        width: 100,
+                        height: 100,
+                        child: IconButton(
+                          padding: EdgeInsetsGeometry.zero,
+                          icon: Icon(
+                            _isPlaying
+                                ? Icons.pause_circle_filled
+                                : Icons.play_circle_filled,
+                            color: Colors.white,
+                            size: 80,
+                          ),
+                          onPressed: () {
+                            if (!_showControls) {
+                              _showControlsHandel();
+                              return;
+                            }
+                            _togglePlayPause();
+                          },
+                        ),
+                      ),
+
+                    // 快进
+                    IconButton(
+                      padding: EdgeInsetsGeometry.zero,
+                      icon: const Icon(
+                        Icons.forward_10,
+                        color: Colors.white,
+                        size: 40,
+                      ),
+                      onPressed: () {
+                        if (!_showControls) {
+                          _showControlsHandel();
+                          return;
+                        }
+                        widget.player.seekForward();
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
 

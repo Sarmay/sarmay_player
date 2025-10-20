@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_sticky_header/flutter_sticky_header.dart';
 import 'package:sarmay_player/sarmay_player.dart';
 
 void main() {
@@ -196,11 +197,12 @@ class _PlayerScreenState extends State<PlayerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Sarmay测试视频投屏和播放器')),
-      body: SingleChildScrollView(
-        child: Center(
-          child: Column(
-            children: [
-              SarmayPlayer(
+      body: CustomScrollView(
+        slivers: [
+          SliverStickyHeader(
+            header: AspectRatio(
+              aspectRatio: 16 / 9,
+              child: SarmayPlayer(
                 player: player,
                 controller: player.videoController,
                 onCompleted: (bool completed) {
@@ -219,70 +221,79 @@ class _PlayerScreenState extends State<PlayerScreen> {
                   print("主页面errMsg：$errMsg");
                 },
               ),
-              const SizedBox(height: 16),
-              // 显示当前播放的视频标题
-              InkWell(
-                onTap: () {
-                  player.seek(Duration(seconds: 56));
-                },
-                child: Text(
-                  "当前播放: ${curPlay.title ?? '未命名视频'}",
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              // 控制按钮
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  MaterialButton(
-                    color: Colors.blue,
-                    onPressed: playPrevious,
-                    child: const Text(
-                      "上一个",
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  MaterialButton(
-                    color: Colors.red,
-                    onPressed: playNext,
-                    child: const Text(
-                      "下一个",
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              // 视频列表选择器
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Column(
-                  children: sampleList.asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final mediaUrl = entry.value;
-                    return ListTile(
-                      title: Text(mediaUrl.title ?? '未命名视频'),
-                      subtitle: Text(
-                        mediaUrl.url,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+            ),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, i) => Column(
+                  children: [
+                    const SizedBox(height: 16),
+                    // 显示当前播放的视频标题
+                    InkWell(
+                      onTap: () {
+                        player.seek(Duration(seconds: 56));
+                      },
+                      child: Text(
+                        "当前播放: ${curPlay.title ?? '未命名视频'}",
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                      tileColor: index == curIndex
-                          ? Colors.blue.shade100
-                          : null,
-                      onTap: () => playAtIndex(index),
-                    );
-                  }).toList(),
+                    ),
+                    const SizedBox(height: 16),
+                    // 控制按钮
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        MaterialButton(
+                          color: Colors.blue,
+                          onPressed: playPrevious,
+                          child: const Text(
+                            "上一个",
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        MaterialButton(
+                          color: Colors.red,
+                          onPressed: playNext,
+                          child: const Text(
+                            "下一个",
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    // 视频列表选择器
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Column(
+                        children: sampleList.asMap().entries.map((entry) {
+                          final index = entry.key;
+                          final mediaUrl = entry.value;
+                          return ListTile(
+                            title: Text(mediaUrl.title ?? '未命名视频'),
+                            subtitle: Text(
+                              mediaUrl.url,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            tileColor: index == curIndex
+                                ? Colors.blue.shade100
+                                : null,
+                            onTap: () => playAtIndex(index),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ],
                 ),
+                childCount: 1,
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

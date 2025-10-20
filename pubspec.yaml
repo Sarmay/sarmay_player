@@ -1,6 +1,6 @@
 name: sarmay_player
 description: "基于media_kit的播放器"
-version: 0.0.3
+version: 0.0.4
 homepage: https://github.com/Sarmay/sarmay_player.git
 
 environment:

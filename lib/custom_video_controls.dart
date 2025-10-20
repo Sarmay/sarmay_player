@@ -155,6 +155,7 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
     }
     return GestureDetector(
       onTap: _showControlsHandel,
+      behavior: HitTestBehavior.opaque,
       child: AnimatedOpacity(
         opacity: _showControls || _isBuffering ? 1.0 : 0.0,
         duration: const Duration(milliseconds: 300),
@@ -184,6 +185,7 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
                       SizedBox(height: 24)
                     else
                       IconButton(
+                        padding: EdgeInsetsGeometry.zero,
                         icon: const Icon(
                           Icons.cast_connected,
                           color: Colors.white,
@@ -209,6 +211,7 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
                     children: [
                       // Seek backward
                       IconButton(
+                        padding: EdgeInsetsGeometry.zero,
                         icon: const Icon(
                           Icons.replay_10,
                           color: Colors.white,
@@ -228,6 +231,7 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
 
                       // Seek forward
                       IconButton(
+                        padding: EdgeInsetsGeometry.zero,
                         icon: const Icon(
                           Icons.forward_10,
                           color: Colors.white,
@@ -297,6 +301,7 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
                       style: const TextStyle(color: Colors.white),
                     ),
                     IconButton(
+                      padding: EdgeInsetsGeometry.zero,
                       icon: const Icon(Icons.fullscreen, color: Colors.white),
                       onPressed: () {
                         if (!_showControls) {
@@ -328,7 +333,7 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
     return IconButton(
       padding: EdgeInsetsGeometry.zero,
       icon: Icon(
-        _isPlaying ? Icons.pause : Icons.play_circle_filled,
+        _isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
         color: Colors.white,
         size: 60,
       ),

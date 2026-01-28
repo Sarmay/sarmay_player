@@ -16,7 +16,7 @@ class FullScreenPlayer extends StatefulWidget {
   State<FullScreenPlayer> createState() => _FullScreenPlayerState();
 }
 
-class _FullScreenPlayerState extends State<FullScreenPlayer> {
+class _FullScreenPlayerState extends State<FullScreenPlayer> with WidgetsBindingObserver {
   bool _showControls = false;
   Timer? _hideControlsTimer;
 
@@ -35,6 +35,7 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _setLandscapeFullScreen();
     setupStreams();
     _showControlsHandel();
@@ -42,6 +43,7 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _hideControlsTimer?.cancel();
     _playingSubscription.cancel();
     _durationSubscription.cancel();
@@ -51,7 +53,7 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
     super.dispose();
   }
 
-  // @override
+  @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       // 应用从后台回到前台时，重新设置方向

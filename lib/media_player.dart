@@ -63,88 +63,183 @@ class MediaPlayer {
   }
 
   void _setupStreams() {
-    _positionController.onListen = () {
-      _positionController.add(_position);
-    };
-
-    _durationController.onListen = () {
-      _durationController.add(_duration);
-    };
-
-    _playingController.onListen = () {
-      _playingController.add(_playing);
-    };
-
-    _bufferingController.onListen = () {
-      _bufferingController.add(_isBuffering);
-    };
-
-    _showTipController.onListen = () {
-      _showTipController.add(_showTip);
-    };
-
-    _player.stream.position.listen((Duration position) {
-      _position = position;
-      if (_seekPosition != null) {
-        _player.seek(_seekPosition!);
-        _seekPosition = null;
-      }
-      if (!_positionController.isClosed) {
-        _positionController.add(position);
-      }
-      if (_tipTime != null) {
-        if (position >= _tipTime!) {
-          _showTip = true;
-          _player.pause();
-          _showTipController.add(true);
+    try {
+      _positionController.onListen = () {
+        try {
+          if (!_positionController.isClosed && !_isDisposed) {
+            _positionController.add(_position);
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            print("positionController onListen error: $e");
+          }
         }
-      }
-    });
+      };
 
-    _player.stream.playing.listen((bool playing) {
-      _playing = playing;
-      if (!_playingController.isClosed) {
-        _playingController.add(playing);
-      }
-      if (!_durationController.isClosed) {
-        _durationController.add(_duration);
-      }
-    });
+      _durationController.onListen = () {
+        try {
+          if (!_durationController.isClosed && !_isDisposed) {
+            _durationController.add(_duration);
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            print("durationController onListen error: $e");
+          }
+        }
+      };
 
-    _player.stream.buffering.listen((bool buffering) {
-      _isBuffering = buffering;
-      if (!_bufferingController.isClosed) {
-        _bufferingController.add(buffering);
-      }
-      if (!_playingController.isClosed) {
-        _playingController.add(!buffering);
-      }
-      if (!_durationController.isClosed) {
-        _durationController.add(_duration);
-      }
-    });
+      _playingController.onListen = () {
+        try {
+          if (!_playingController.isClosed && !_isDisposed) {
+            _playingController.add(_playing);
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            print("playingController onListen error: $e");
+          }
+        }
+      };
 
-    _player.stream.error.listen((String error) {
+      _bufferingController.onListen = () {
+        try {
+          if (!_bufferingController.isClosed && !_isDisposed) {
+            _bufferingController.add(_isBuffering);
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            print("bufferingController onListen error: $e");
+          }
+        }
+      };
+
+      _showTipController.onListen = () {
+        try {
+          if (!_showTipController.isClosed && !_isDisposed) {
+            _showTipController.add(_showTip);
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            print("showTipController onListen error: $e");
+          }
+        }
+      };
+
+      _player.stream.position.listen((Duration position) {
+        try {
+          if (_isDisposed) {
+            return;
+          }
+          _position = position;
+          if (_seekPosition != null) {
+            final seekPos = _seekPosition!;
+            _seekPosition = null;
+            _player.seek(seekPos);
+          }
+          if (!_positionController.isClosed && !_isDisposed) {
+            _positionController.add(position);
+          }
+          if (_tipTime != null) {
+            if (position >= _tipTime!) {
+              _showTip = true;
+              _player.pause();
+              if (!_showTipController.isClosed && !_isDisposed) {
+                _showTipController.add(true);
+              }
+            }
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            print("position stream error: $e");
+          }
+        }
+      });
+
+      _player.stream.playing.listen((bool playing) {
+        try {
+          if (_isDisposed) {
+            return;
+          }
+          _playing = playing;
+          if (!_playingController.isClosed && !_isDisposed) {
+            _playingController.add(playing);
+          }
+          if (!_durationController.isClosed && !_isDisposed) {
+            _durationController.add(_duration);
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            print("playing stream error: $e");
+          }
+        }
+      });
+
+      _player.stream.buffering.listen((bool buffering) {
+        try {
+          if (_isDisposed) {
+            return;
+          }
+          _isBuffering = buffering;
+          if (!_bufferingController.isClosed && !_isDisposed) {
+            _bufferingController.add(buffering);
+          }
+          if (!_playingController.isClosed && !_isDisposed) {
+            _playingController.add(!buffering);
+          }
+          if (!_durationController.isClosed && !_isDisposed) {
+            _durationController.add(_duration);
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            print("buffering stream error: $e");
+          }
+        }
+      });
+
+      _player.stream.error.listen((String error) {
+        try {
+          if (_isDisposed) {
+            return;
+          }
+          if (kDebugMode) {
+            print("play error: $error");
+          }
+          if (!_errorController.isClosed && !_isDisposed) {
+            _errorController.add(error);
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            print("error stream error: $e");
+          }
+        }
+      });
+
+      _player.stream.duration.listen((Duration duration) {
+        try {
+          if (_isDisposed) {
+            return;
+          }
+          _duration = duration;
+          if (!_durationController.isClosed && !_isDisposed) {
+            _durationController.add(duration);
+          }
+          bool calcInitialized = duration.inMicroseconds > 0;
+          if (!_initializedController.isClosed &&
+              !_isDisposed &&
+              _isInitialized != calcInitialized) {
+            _isInitialized = calcInitialized;
+            _initializedController.add(_isInitialized);
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            print("duration stream error: $e");
+          }
+        }
+      });
+    } catch (e) {
       if (kDebugMode) {
-        print("play error: $error");
+        print("setup streams error: $e");
       }
-      if (!_errorController.isClosed) {
-        _errorController.add(error);
-      }
-    });
-
-    _player.stream.duration.listen((Duration duration) {
-      _duration = duration;
-      if (!_durationController.isClosed) {
-        _durationController.add(duration);
-      }
-      bool calcInitialized = duration.inMicroseconds > 0;
-      if (!_initializedController.isClosed &&
-          _isInitialized != calcInitialized) {
-        _isInitialized = calcInitialized;
-        _initializedController.add(_isInitialized);
-      }
-    });
+    }
   }
 
   // VideoController 访问器
@@ -158,10 +253,10 @@ class MediaPlayer {
       _mediaUrl = mediaUrl;
       _isInitialized = false;
       _showTip = false;
-      if (!_initializedController.isClosed) {
+      if (!_initializedController.isClosed && !_isDisposed) {
         _initializedController.add(false);
       }
-      if (!_showTipController.isClosed) {
+      if (!_showTipController.isClosed && !_isDisposed) {
         _showTipController.add(false);
       }
       _player.stop();
@@ -171,7 +266,9 @@ class MediaPlayer {
       _castDevicesType = mediaUrl.castDevicesType;
       return _player.open(Media(mediaUrl.url), play: play);
     } catch (e) {
-      _errorController.add(e.toString());
+      if (!_errorController.isClosed && !_isDisposed) {
+        _errorController.add(e.toString());
+      }
       return Future.value();
     }
   }
@@ -230,7 +327,7 @@ class MediaPlayer {
     _checkDisposed();
     if (_playing) {
       _isBuffering = true;
-      if (!_bufferingController.isClosed) {
+      if (!_bufferingController.isClosed && !_isDisposed) {
         _bufferingController.add(_isBuffering);
       }
     }
@@ -300,8 +397,6 @@ class MediaPlayer {
 
   Stream<String> get error {
     _checkDisposed();
-    _isInitialized = false;
-    _initializedController.add(false);
     return _errorController.stream;
   }
 
@@ -384,10 +479,10 @@ class MediaPlayer {
       _mediaUrl = MediaUrl(url: '');
       _isInitialized = false;
       _showTip = false;
-      if (!_initializedController.isClosed) {
+      if (!_initializedController.isClosed && !_isDisposed) {
         _initializedController.add(false);
       }
-      if (!_showTipController.isClosed) {
+      if (!_showTipController.isClosed && !_isDisposed) {
         _showTipController.add(false);
       }
       _tipTime = null;
@@ -396,8 +491,8 @@ class MediaPlayer {
       _castDevicesType = DevicesType.all;
       return await _player.stop();
     } catch (e) {
-      if (kDebugMode) {
-        print("play error: $e");
+      if (!_errorController.isClosed && !_isDisposed) {
+        _errorController.add(e.toString());
       }
       return Future.value();
     }
@@ -411,7 +506,7 @@ class MediaPlayer {
       _tipTime = null;
       _tipWidget = null;
       _castWidget = null;
-      if (!_showTipController.isClosed) {
+      if (!_showTipController.isClosed && !_isDisposed) {
         _showTipController.add(false);
       }
       return _player.play();
@@ -433,16 +528,18 @@ class MediaPlayer {
   }
 
   Future<void> dispose() async {
+    // 先标记为已释放，防止回调中继续操作
+    _isDisposed = true;
     await _bufferingController.close();
     await _playingController.close();
     await _positionController.close();
     await _durationController.close();
     await _errorController.close();
     await _initializedController.close();
+    await _showTipController.close();
 
     if (!_isDisposed) {
       await _player.dispose();
-      _isDisposed = true;
     }
   }
 
@@ -473,10 +570,17 @@ class MediaUrl {
   MediaUrl.fromJson(Map<String, dynamic> json)
     : title = json['title'],
       url = json['url'],
-      tipTime = json['tipTime'],
+      tipTime = json['tipTime'] is int
+          ? Duration(seconds: json['tipTime'])
+          : json['tipTime'],
       tipWidget = json['tipWidget'],
       castWidget = json['castWidget'],
-      castDevicesType = json['castDevicesType'];
+      castDevicesType = json['castDevicesType'] is String
+          ? DevicesType.values.firstWhere(
+              (e) => e.toString() == json['castDevicesType'],
+              orElse: () => DevicesType.all,
+            )
+          : json['castDevicesType'] ?? DevicesType.all;
 
   Map<String, dynamic> toJson() => {
     'title': title,

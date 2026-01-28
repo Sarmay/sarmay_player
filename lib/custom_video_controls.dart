@@ -349,6 +349,8 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
 
   // 显示投屏设备选择
   void _showCastDialog(BuildContext context) {
+    if (context == null) return;
+    
     // 先暂停播放
     bool isPlaying = _isPlaying;
     if (isPlaying) {

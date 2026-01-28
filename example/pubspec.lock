@@ -234,10 +234,11 @@ packages:
   media_cast_dlna:
     dependency: transitive
     description:
-      name: media_cast_dlna
-      sha256: ff666d82e843a7ab80410800e9ce82a3151b89777460bf634ce55216bf6539ae
-      url: "https://pub.flutter-io.cn"
-    source: hosted
+      path: "."
+      ref: main
+      resolved-ref: e5cc420ca1813cd4ad0627c7264849508d41fc1c
+      url: "https://github.com/Sarmay/media_cast_dlna.git"
+    source: git
     version: "0.2.0"
   media_kit:
     dependency: transitive
@@ -357,7 +358,7 @@ packages:
       path: ".."
       relative: true
     source: path
-    version: "0.0.4"
+    version: "0.0.5"
   sky_engine:
     dependency: transitive
     description: flutter

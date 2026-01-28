@@ -1,6 +1,6 @@
 name: sarmay_player
 description: "基于media_kit的播放器"
-version: 0.0.5
+version: 0.0.6
 homepage: https://github.com/Sarmay/sarmay_player.git
 
 environment:
@@ -12,9 +12,11 @@ dependencies:
     sdk: flutter
   media_kit: ^1.2.6
   media_kit_video: ^2.0.1
-  media_kit_libs_ios_video: ^1.1.4
-  media_kit_libs_android_video: ^1.3.8
-  media_cast_dlna: ^0.2.0
+  media_kit_libs_video: ^1.0.7
+  media_cast_dlna:
+    git:
+      url: https://github.com/Sarmay/media_cast_dlna.git
+      ref: main
   plugin_platform_interface: ^2.1.8
 
 dev_dependencies:

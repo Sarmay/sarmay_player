@@ -13,10 +13,7 @@ dependencies:
   media_kit: ^1.2.6
   media_kit_video: ^2.0.1
   media_kit_libs_video: ^1.0.7
-  media_cast_dlna:
-    git:
-      url: https://github.com/Sarmay/media_cast_dlna.git
-      ref: main
+  media_cast_dlna_2: ^0.2.0
   plugin_platform_interface: ^2.1.8
 
 dev_dependencies:

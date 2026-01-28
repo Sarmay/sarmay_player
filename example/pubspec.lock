@@ -231,14 +231,13 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "0.11.1"
-  media_cast_dlna:
+  media_cast_dlna_2:
     dependency: transitive
     description:
-      path: "."
-      ref: main
-      resolved-ref: e5cc420ca1813cd4ad0627c7264849508d41fc1c
-      url: "https://github.com/Sarmay/media_cast_dlna.git"
-    source: git
+      name: media_cast_dlna_2
+      sha256: c337283eeeac50dd8de9ecf676d0f1f60c79adcf3b900cb2cc9a96457fb6795b
+      url: "https://pub.flutter-io.cn"
+    source: hosted
     version: "0.2.0"
   media_kit:
     dependency: transitive
@@ -264,6 +263,38 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "1.1.4"
+  media_kit_libs_linux:
+    dependency: transitive
+    description:
+      name: media_kit_libs_linux
+      sha256: "2b473399a49ec94452c4d4ae51cfc0f6585074398d74216092bf3d54aac37ecf"
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "1.2.1"
+  media_kit_libs_macos_video:
+    dependency: transitive
+    description:
+      name: media_kit_libs_macos_video
+      sha256: f26aa1452b665df288e360393758f84b911f70ffb3878032e1aabba23aa1032d
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "1.1.4"
+  media_kit_libs_video:
+    dependency: transitive
+    description:
+      name: media_kit_libs_video
+      sha256: "2b235b5dac79c6020e01eef5022c6cc85fedc0df1738aadc6ea489daa12a92a9"
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "1.0.7"
+  media_kit_libs_windows_video:
+    dependency: transitive
+    description:
+      name: media_kit_libs_windows_video
+      sha256: dff76da2778729ab650229e6b4ec6ec111eb5151431002cbd7ea304ff1f112ab
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "1.0.11"
   media_kit_video:
     dependency: transitive
     description:
@@ -358,7 +389,7 @@ packages:
       path: ".."
       relative: true
     source: path
-    version: "0.0.5"
+    version: "0.0.6"
   sky_engine:
     dependency: transitive
     description: flutter

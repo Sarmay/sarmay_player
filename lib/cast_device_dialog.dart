@@ -2,8 +2,8 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:media_cast_dlna/media_cast_dlna.dart';
 import 'package:sarmay_player/other_data.dart';
+import 'package:media_cast_dlna_2/media_cast_dlna.dart';
 
 class CastDeviceDialog extends StatefulWidget {
   final String playUrl;

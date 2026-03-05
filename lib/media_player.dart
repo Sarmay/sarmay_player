@@ -189,9 +189,6 @@ class MediaPlayer {
           if (!_bufferingController.isClosed && !_isDisposed) {
             _bufferingController.add(buffering);
           }
-          if (!_playingController.isClosed && !_isDisposed) {
-            _playingController.add(!buffering);
-          }
           if (!_durationController.isClosed && !_isDisposed) {
             _durationController.add(_duration);
           }

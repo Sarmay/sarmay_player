@@ -13,7 +13,8 @@ enum _DragDirection { none, horizontal, vertical }
 
 class CustomVideoControls extends StatefulWidget {
   final MediaPlayer player;
-  const CustomVideoControls({super.key, required this.player});
+  final Future<MediaUrl?> Function()? onPlayNext;
+  const CustomVideoControls({super.key, required this.player, this.onPlayNext});
 
   @override
   State<CustomVideoControls> createState() => _CustomVideoControlsState();
@@ -187,7 +188,10 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => FullScreenPlayer(player: widget.player),
+        builder: (context) => FullScreenPlayer(
+          player: widget.player,
+          onPlayNext: widget.onPlayNext,
+        ),
       ),
     );
   }

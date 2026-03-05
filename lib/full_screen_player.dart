@@ -10,7 +10,8 @@ enum _DragDirection { none, horizontal, vertical }
 
 class FullScreenPlayer extends StatefulWidget {
   final MediaPlayer player;
-  const FullScreenPlayer({super.key, required this.player});
+  final Future<MediaUrl?> Function()? onPlayNext;
+  const FullScreenPlayer({super.key, required this.player, this.onPlayNext});
 
   @override
   State<FullScreenPlayer> createState() => _FullScreenPlayerState();
@@ -780,15 +781,18 @@ class _FullScreenPlayerState extends State<FullScreenPlayer>
               ),
             ),
           ),
-          if (widget.player.hasPlaylist)
+          if (widget.onPlayNext != null)
             IconButton(
               icon: const Icon(Icons.skip_next, color: Colors.white),
-              onPressed: () {
+              onPressed: () async {
                 if (!_showControls) {
                   _showControlsHandel();
                   return;
                 }
-                widget.player.playNextVideo();
+                final mediaUrl = await widget.onPlayNext!();
+                if (mediaUrl != null && mounted) {
+                  await widget.player.open(mediaUrl, play: true);
+                }
               },
             ),
           IconButton(

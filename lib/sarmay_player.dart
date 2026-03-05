@@ -20,6 +20,7 @@ class SarmayPlayer extends StatefulWidget {
   final void Function(String errMsg)? onError;
   final void Function(Duration position)? onPosUpdate;
   final Duration posUpdateInterval;
+  final Future<MediaUrl?> Function()? onPlayNext;
 
   const SarmayPlayer({
     super.key,
@@ -30,6 +31,7 @@ class SarmayPlayer extends StatefulWidget {
     this.onError,
     this.onPosUpdate,
     this.posUpdateInterval = const Duration(seconds: 5),
+    this.onPlayNext,
   });
 
   @override
@@ -155,7 +157,12 @@ class _SarmayPlayerState extends State<SarmayPlayer> {
           // Video player
           Video(controller: widget.controller, controls: NoVideoControls),
           // Custom controls
-          Positioned.fill(child: CustomVideoControls(player: widget.player)),
+          Positioned.fill(
+            child: CustomVideoControls(
+              player: widget.player,
+              onPlayNext: widget.onPlayNext,
+            ),
+          ),
         ],
       ),
     );

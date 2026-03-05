@@ -11,6 +11,7 @@ class PlaylistPlayerPage extends StatefulWidget {
 class _PlaylistPlayerPageState extends State<PlaylistPlayerPage> {
   late MediaPlayer player;
   bool _isDisposed = false;
+  int _currentIndex = 0;
 
   final List<MediaUrl> playlist = [
     MediaUrl(
@@ -57,7 +58,37 @@ class _PlaylistPlayerPageState extends State<PlaylistPlayerPage> {
 
   void _initPlayer() {
     if (_isDisposed) return;
-    player.openPlaylist(playlist, startIndex: 0, play: true);
+    player.open(playlist[_currentIndex], play: true);
+  }
+
+  Future<MediaUrl?> _onPlayNext() async {
+    debugPrint('=== 用户请求播放下一个视频 ===');
+    
+    if (_currentIndex < playlist.length - 1) {
+      _currentIndex++;
+
+      if(mounted){
+        setState(() {
+
+        });
+      }
+      final nextMedia = playlist[_currentIndex];
+      
+      debugPrint('下一个视频: ${nextMedia.title}');
+      debugPrint('URL: ${nextMedia.url}');
+      
+      await Future.delayed(const Duration(milliseconds: 300));
+      
+      return nextMedia;
+    } else {
+      debugPrint('已经是最后一个视频了');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('已经是最后一个视频了')),
+        );
+      }
+      return null;
+    }
   }
 
   @override
@@ -81,6 +112,7 @@ class _PlaylistPlayerPageState extends State<PlaylistPlayerPage> {
             child: SarmayPlayer(
               player: player,
               controller: player.videoController,
+              onPlayNext: _onPlayNext,
               onCompleted: () {
                 debugPrint("当前视频播放完成");
               },
@@ -102,11 +134,35 @@ class _PlaylistPlayerPageState extends State<PlaylistPlayerPage> {
                   const SizedBox(height: 8),
                   Text('共 ${playlist.length} 个视频'),
                   const SizedBox(height: 4),
-                  Text('当前播放: 第 ${player.currentPlaylistIndex + 1} 个'),
+                  Text('当前播放: 第 ${_currentIndex + 1} 个 - ${playlist[_currentIndex].title}'),
                   const SizedBox(height: 16),
-                  const Text(
-                    '提示: 点击全屏按钮进入全屏模式，在全屏模式下右下角会显示"下一个"按钮（仅在播放列表模式下显示）',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '使用说明',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          '• 点击全屏按钮进入全屏模式\n'
+                          '• 在全屏模式下右下角会显示"下一个"按钮\n'
+                          '• 点击"下一个"按钮会触发 onPlayNext 回调\n'
+                          '• 在回调中可以重新获取链接或处理授权\n'
+                          '• 返回 MediaUrl 对象开始播放下一个视频\n'
+                          '• 返回 null 表示没有下一个视频',
+                          style: TextStyle(fontSize: 12),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 24),
                   Text(
@@ -117,20 +173,37 @@ class _PlaylistPlayerPageState extends State<PlaylistPlayerPage> {
                   ...playlist.asMap().entries.map((entry) {
                     final index = entry.key;
                     final media = entry.value;
+                    final isPlaying = index == _currentIndex;
                     return Card(
+                      color: isPlaying ? Colors.blue.shade50 : null,
                       child: ListTile(
                         leading: CircleAvatar(
-                          child: Text('${index + 1}'),
+                          backgroundColor: isPlaying ? Colors.blue : null,
+                          child: Text(
+                            '${index + 1}',
+                            style: TextStyle(
+                              color: isPlaying ? Colors.white : null,
+                            ),
+                          ),
                         ),
-                        title: Text(media.title ?? '未命名'),
+                        title: Text(
+                          media.title ?? '未命名',
+                          style: TextStyle(
+                            fontWeight: isPlaying ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
                         subtitle: Text(
                           media.url,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(fontSize: 10),
                         ),
+                        trailing: isPlaying ? const Icon(Icons.play_arrow, color: Colors.blue) : null,
                         onTap: () {
-                          player.openPlaylist(playlist, startIndex: index, play: true);
+                          setState(() {
+                            _currentIndex = index;
+                          });
+                          player.open(playlist[_currentIndex], play: true);
                         },
                       ),
                     );

@@ -31,6 +31,15 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
   late StreamSubscription<bool> _bufferingSubscription;
   late StreamSubscription<bool> _showTipSubscription;
 
+  bool _isSeeking = false;
+  Duration _seekPosition = Duration.zero;
+  double _seekProgress = 0.0;
+
+  bool _isLongPressSeeking = false;
+  Timer? _longPressTimer;
+
+  static const int _seekSeconds = 10;
+
   @override
   void initState() {
     super.initState();
@@ -41,6 +50,7 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
   @override
   void dispose() {
     _hideControlsTimer?.cancel();
+    _longPressTimer?.cancel();
     _playingSubscription.cancel();
     _durationSubscription.cancel();
     _positionSubscription.cancel();
@@ -58,7 +68,7 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
       }
     });
     _positionSubscription = widget.player.position.listen((Duration position) {
-      if (mounted) {
+      if (mounted && !_isSeeking && !_isLongPressSeeking) {
         setState(() {
           _position = position;
         });
@@ -90,7 +100,6 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
     });
   }
 
-  // 其他
   String _formatDuration(Duration duration) {
     String twoDigits(int n) => n.toString().padLeft(2, '0');
     final hours = twoDigits(duration.inHours);
@@ -101,7 +110,6 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
         : '$minutes:$seconds';
   }
 
-  // 进入全屏
   void _fullscreen() {
     Navigator.push(
       context,
@@ -111,9 +119,7 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
     );
   }
 
-  // 显示控制器
   void _showControlsHandel() {
-    // 取消之前的计时器（防止多次调用）
     _hideControlsTimer?.cancel();
     if (mounted) {
       if (_showControls) {
@@ -124,7 +130,6 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
         setState(() {
           _showControls = true;
         });
-        // 3秒后隐藏控制栏
         _hideControlsTimer = Timer(const Duration(seconds: 3), () {
           if (mounted) {
             setState(() {
@@ -133,6 +138,103 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
           }
         });
       }
+    }
+  }
+
+  void _onDoubleTapLeft() {
+    widget.player.seekBackward();
+    _showSeekHint(isForward: false);
+  }
+
+  void _onDoubleTapRight() {
+    widget.player.seekForward();
+    _showSeekHint(isForward: true);
+  }
+
+  void _onDoubleTapCenter() {
+    widget.player.playOrPause();
+  }
+
+  void _showSeekHint({required bool isForward}) {
+    setState(() {
+      _seekProgress = isForward ? 1.0 : -1.0;
+    });
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        setState(() {
+          _seekProgress = 0.0;
+        });
+      }
+    });
+  }
+
+  void _onLongPressStart(bool isForward) {
+    _isLongPressSeeking = true;
+    _longPressTimer?.cancel();
+    _longPressTimer = Timer.periodic(const Duration(milliseconds: 200), (
+      timer,
+    ) {
+      if (_isLongPressSeeking) {
+        final currentPos = _position;
+        final seekAmount = Duration(seconds: isForward ? 2 : -2);
+        final newPos = currentPos + seekAmount;
+        final clampedPos = Duration(
+          milliseconds: newPos.inMilliseconds.clamp(
+            0,
+            _duration.inMilliseconds,
+          ),
+        );
+        widget.player.seek(clampedPos);
+        setState(() {
+          _position = clampedPos;
+          _seekProgress = isForward ? 1.0 : -1.0;
+        });
+      }
+    });
+  }
+
+  void _onLongPressEnd() {
+    _isLongPressSeeking = false;
+    _longPressTimer?.cancel();
+    setState(() {
+      _seekProgress = 0.0;
+    });
+  }
+
+  void _onHorizontalDragStart(DragStartDetails details) {
+    if (_duration.inSeconds > 0) {
+      setState(() {
+        _isSeeking = true;
+        _seekPosition = _position;
+      });
+    }
+  }
+
+  void _onHorizontalDragUpdate(DragUpdateDetails details) {
+    if (_isSeeking && _duration.inSeconds > 0) {
+      final screenWidth = MediaQuery.of(context).size.width;
+      final dragProgress = details.primaryDelta! / screenWidth;
+      final totalDuration = _duration.inMilliseconds.toDouble();
+      final seekAmount = dragProgress * totalDuration * 2;
+      final newPosition = Duration(
+        milliseconds: (_seekPosition.inMilliseconds + seekAmount.toInt()).clamp(
+          0,
+          _duration.inMilliseconds,
+        ),
+      );
+      setState(() {
+        _seekPosition = newPosition;
+      });
+    }
+  }
+
+  void _onHorizontalDragEnd(DragEndDetails details) {
+    if (_isSeeking) {
+      widget.player.seek(_seekPosition);
+      setState(() {
+        _isSeeking = false;
+        _position = _seekPosition;
+      });
     }
   }
 
@@ -153,203 +255,250 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
           );
       return tipWidget;
     }
+
     return GestureDetector(
-      onTap: _showControlsHandel,
+      onHorizontalDragStart: _onHorizontalDragStart,
+      onHorizontalDragUpdate: _onHorizontalDragUpdate,
+      onHorizontalDragEnd: _onHorizontalDragEnd,
       behavior: HitTestBehavior.opaque,
-      child: AnimatedOpacity(
-        opacity: _showControls || _isBuffering ? 1.0 : 0.0,
-        duration: const Duration(milliseconds: 300),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                const Color(0xB3000000),
-                Colors.transparent,
-                Colors.transparent,
-                const Color(0xB3000000),
-              ],
-            ),
+      child: Stack(
+        children: [
+          _buildGestureAreas(),
+          if (_showControls ||
+              _isBuffering ||
+              _isSeeking ||
+              _isLongPressSeeking)
+            _buildControlsOverlay(),
+          if (_isSeeking) _buildSeekIndicator(),
+          if (_seekProgress != 0.0) _buildSeekHint(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGestureAreas() {
+    return Row(
+      children: [
+        Expanded(
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onDoubleTap: _onDoubleTapLeft,
+            onLongPressStart: (_) => _onLongPressStart(false),
+            onLongPressEnd: (_) => _onLongPressEnd(),
+            onTap: _showControlsHandel,
+            child: Container(color: Colors.transparent),
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Top controls
-              Container(
-                padding: const EdgeInsets.only(left: 8, right: 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    if (Platform.isIOS)
-                      SizedBox(height: 24)
-                    else
-                      IconButton(
-                        padding: EdgeInsetsGeometry.zero,
-                        icon: const Icon(
-                          Icons.cast_connected,
-                          color: Colors.white,
-                        ),
-                        onPressed: () {
-                          if (!_showControls) {
-                            _showControlsHandel();
-                            return;
-                          }
-                          _showCastDialog(context);
-                        },
-                      ),
-                  ],
-                ),
-              ),
+        ),
+        Expanded(
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onDoubleTap: _onDoubleTapCenter,
+            onTap: _showControlsHandel,
+            child: Container(color: Colors.transparent),
+          ),
+        ),
+        Expanded(
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onDoubleTap: _onDoubleTapRight,
+            onLongPressStart: (_) => _onLongPressStart(true),
+            onLongPressEnd: (_) => _onLongPressEnd(),
+            onTap: _showControlsHandel,
+            child: Container(color: Colors.transparent),
+          ),
+        ),
+      ],
+    );
+  }
 
-              // Center play controls
-              Expanded(
-                child: Center(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      // Seek backward
-                      IconButton(
-                        padding: EdgeInsetsGeometry.zero,
-                        icon: const Icon(
-                          Icons.replay_10,
-                          color: Colors.white,
-                          size: 30,
-                        ),
-                        onPressed: () {
-                          if (!_showControls) {
-                            _showControlsHandel();
-                            return;
-                          }
-                          widget.player.seekBackward();
-                        },
-                      ),
-
-                      // Play/Pause
-                      _middleButton(),
-
-                      // Seek forward
-                      IconButton(
-                        padding: EdgeInsetsGeometry.zero,
-                        icon: const Icon(
-                          Icons.forward_10,
-                          color: Colors.white,
-                          size: 30,
-                        ),
-                        onPressed: () {
-                          if (!_showControls) {
-                            _showControlsHandel();
-                            return;
-                          }
-                          widget.player.seekForward();
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              // Bottom progress bar
-              Container(
-                padding: const EdgeInsets.only(right: 8, left: 8),
-                child: Row(
-                  children: [
-                    Text(
-                      _formatDuration(_position),
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                    // Progress bar
-                    Expanded(
-                      child: SliderTheme(
-                        data: SliderTheme.of(context).copyWith(
-                          trackHeight: 4,
-                          thumbShape: const RoundSliderThumbShape(
-                            enabledThumbRadius: 8,
-                          ),
-                          overlayShape: const RoundSliderOverlayShape(
-                            overlayRadius: 14,
-                          ),
-                          activeTrackColor: Colors.red,
-                          inactiveTrackColor: Colors.grey,
-                          thumbColor: Colors.red,
-                        ),
-                        child: Slider(
-                          value: _duration.inSeconds > 0
-                              ? _position.inSeconds.toDouble()
-                              : 0.0,
-                          min: 0,
-                          max: _duration.inSeconds > 0
-                              ? _duration.inSeconds.toDouble()
-                              : 1.0,
-                          onChanged: (value) {
-                            if (!_showControls) {
-                              _showControlsHandel();
-                              return;
-                            }
-                            if (_duration.inSeconds > 0) {
-                              widget.player.seek(
-                                Duration(seconds: value.toInt()),
-                              );
-                            }
-                          },
-                        ),
-                      ),
-                    ),
-                    Text(
-                      _formatDuration(_duration),
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                    IconButton(
-                      padding: EdgeInsetsGeometry.zero,
-                      icon: const Icon(Icons.fullscreen, color: Colors.white),
-                      onPressed: () {
-                        if (!_showControls) {
-                          _showControlsHandel();
-                          return;
-                        }
-                        _fullscreen();
-                      },
-                    ),
-                  ],
-                ),
-              ),
+  Widget _buildControlsOverlay() {
+    return AnimatedOpacity(
+      opacity: _showControls || _isBuffering ? 1.0 : 0.0,
+      duration: const Duration(milliseconds: 300),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              const Color(0xB3000000),
+              Colors.transparent,
+              Colors.transparent,
+              const Color(0xB3000000),
             ],
           ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _buildTopControls(),
+            _buildCenterControls(),
+            _buildBottomControls(),
+          ],
         ),
       ),
     );
   }
 
-  // 中间按钮
-  Widget _middleButton() {
-    if (_isBuffering) {
-      return SizedBox(
-        width: 60,
-        height: 60,
-        child: CircularProgressIndicator(color: Colors.white),
-      );
-    }
-    return IconButton(
-      padding: EdgeInsetsGeometry.zero,
-      icon: Icon(
-        _isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
-        color: Colors.white,
-        size: 60,
+  Widget _buildTopControls() {
+    return Container(
+      padding: const EdgeInsets.only(left: 8, right: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          if (Platform.isIOS)
+            const SizedBox(height: 24)
+          else
+            IconButton(
+              padding: EdgeInsetsGeometry.zero,
+              icon: const Icon(Icons.cast_connected, color: Colors.white),
+              onPressed: () {
+                if (!_showControls) {
+                  _showControlsHandel();
+                  return;
+                }
+                _showCastDialog(context);
+              },
+            ),
+        ],
       ),
-      onPressed: () {
-        if (!_showControls) {
-          _showControlsHandel();
-          return;
-        }
-        widget.player.playOrPause();
-      },
     );
   }
 
-  // 显示投屏设备选择
+  Widget _buildCenterControls() {
+    return Expanded(
+      child: Center(
+        child: _isBuffering
+            ? SizedBox(
+                width: 60,
+                height: 60,
+                child: const CircularProgressIndicator(color: Colors.white),
+              )
+            : IconButton(
+                padding: EdgeInsetsGeometry.zero,
+                icon: Icon(
+                  _isPlaying
+                      ? Icons.pause_circle_filled
+                      : Icons.play_circle_filled,
+                  color: Colors.white,
+                  size: 60,
+                ),
+                onPressed: () {
+                  if (!_showControls) {
+                    _showControlsHandel();
+                    return;
+                  }
+                  widget.player.playOrPause();
+                },
+              ),
+      ),
+    );
+  }
+
+  Widget _buildBottomControls() {
+    return Container(
+      padding: const EdgeInsets.only(right: 8, left: 8),
+      child: Row(
+        children: [
+          Text(
+            _formatDuration(_isSeeking ? _seekPosition : _position),
+            style: const TextStyle(color: Colors.white),
+          ),
+          Expanded(
+            child: SliderTheme(
+              data: SliderTheme.of(context).copyWith(
+                trackHeight: 4,
+                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+                overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+                activeTrackColor: Colors.red,
+                inactiveTrackColor: Colors.grey,
+                thumbColor: Colors.red,
+              ),
+              child: Slider(
+                value: _duration.inSeconds > 0
+                    ? (_isSeeking ? _seekPosition : _position).inSeconds
+                          .toDouble()
+                    : 0.0,
+                min: 0,
+                max: _duration.inSeconds > 0
+                    ? _duration.inSeconds.toDouble()
+                    : 1.0,
+                onChanged: (value) {
+                  if (!_showControls) {
+                    _showControlsHandel();
+                    return;
+                  }
+                  if (_duration.inSeconds > 0) {
+                    widget.player.seek(Duration(seconds: value.toInt()));
+                  }
+                },
+              ),
+            ),
+          ),
+          Text(
+            _formatDuration(_duration),
+            style: const TextStyle(color: Colors.white),
+          ),
+          IconButton(
+            padding: EdgeInsetsGeometry.zero,
+            icon: const Icon(Icons.fullscreen, color: Colors.white),
+            onPressed: () {
+              if (!_showControls) {
+                _showControlsHandel();
+                return;
+              }
+              _fullscreen();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSeekIndicator() {
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.black54,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          '${_formatDuration(_seekPosition)} / ${_formatDuration(_duration)}',
+          style: const TextStyle(color: Colors.white, fontSize: 18),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSeekHint() {
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.black54,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              _seekProgress > 0 ? Icons.fast_forward : Icons.fast_rewind,
+              color: Colors.white,
+              size: 24,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '${_seekSeconds}s',
+              style: const TextStyle(color: Colors.white, fontSize: 18),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showCastDialog(BuildContext context) {
-    // 先暂停播放
     bool isPlaying = _isPlaying;
     if (isPlaying) {
       widget.player.pause();

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
@@ -16,6 +18,8 @@ class SarmayPlayer extends StatefulWidget {
   final void Function(bool completed)? onCompleted;
   final void Function(bool initialized)? onInitialized;
   final void Function(String errMsg)? onError;
+  final void Function(Duration position)? onPosUpdate;
+  final Duration posUpdateInterval;
 
   const SarmayPlayer({
     super.key,
@@ -24,6 +28,8 @@ class SarmayPlayer extends StatefulWidget {
     this.onCompleted,
     this.onInitialized,
     this.onError,
+    this.onPosUpdate,
+    this.posUpdateInterval = const Duration(seconds: 5),
   });
 
   @override
@@ -35,10 +41,33 @@ class _SarmayPlayerState extends State<SarmayPlayer> {
   bool _hasError = false;
   String _errorMsg = "";
 
+  Timer? _posUpdateTimer;
+  Duration _lastPosition = Duration.zero;
+
   @override
   void initState() {
     super.initState();
     setupStreams();
+    _startPosUpdateTimer();
+  }
+
+  @override
+  void dispose() {
+    _posUpdateTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startPosUpdateTimer() {
+    if (widget.onPosUpdate == null) return;
+
+    _posUpdateTimer?.cancel();
+    _posUpdateTimer = Timer.periodic(widget.posUpdateInterval, (_) {
+      final currentPosition = widget.player.videoPosition;
+      if (currentPosition != _lastPosition) {
+        _lastPosition = currentPosition;
+        widget.onPosUpdate!(currentPosition);
+      }
+    });
   }
 
   void setupStreams() {

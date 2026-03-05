@@ -205,6 +205,11 @@ class _PlayerScreenState extends State<PlayerScreen> {
               child: SarmayPlayer(
                 player: player,
                 controller: player.videoController,
+                onPosUpdate: (position) {
+                  // 保存播放位置到历史记录
+                  print('当前播放位置: ${position.inSeconds}秒');
+                },
+                posUpdateInterval: const Duration(seconds: 10), // 可选，默认5秒
                 onCompleted: (bool completed) {
                   print("主页面completed：$completed");
                   if (completed) {

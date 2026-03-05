@@ -40,6 +40,10 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
 
   static const int _seekSeconds = 10;
 
+  Duration? _lastHistoryPosition;
+  DateTime _lastHistorySaveTime = DateTime.now();
+  static const Duration _historySaveInterval = Duration(seconds: 5);
+
   @override
   void initState() {
     super.initState();
@@ -530,4 +534,20 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
     );
     Overlay.of(context).insert(_castOverlayEntry!);
   }
+
+  Duration? getPositionForHistory() {
+    final now = DateTime.now();
+    final timeSinceLastSave = now.difference(_lastHistorySaveTime);
+
+    if (timeSinceLastSave < _historySaveInterval) {
+      return _lastHistoryPosition;
+    }
+
+    _lastHistorySaveTime = now;
+    _lastHistoryPosition = _position;
+
+    return _position;
+  }
+
+  Duration get currentPosition => _position;
 }

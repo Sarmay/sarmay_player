@@ -780,6 +780,17 @@ class _FullScreenPlayerState extends State<FullScreenPlayer>
               ),
             ),
           ),
+          if (widget.player.hasPlaylist)
+            IconButton(
+              icon: const Icon(Icons.skip_next, color: Colors.white),
+              onPressed: () {
+                if (!_showControls) {
+                  _showControlsHandel();
+                  return;
+                }
+                widget.player.playNextVideo();
+              },
+            ),
           IconButton(
             icon: const Icon(Icons.fullscreen_exit, color: Colors.white),
             onPressed: () {

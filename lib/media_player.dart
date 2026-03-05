@@ -30,6 +30,8 @@ class MediaPlayer {
   Duration? _seekPosition;
   bool? _seekAndPlay;
   bool _isSeekingToPosition = false;
+  Playlist? _playlist;
+  int _currentPlaylistIndex = 0;
 
   // 自定义初始化状态流
   final StreamController<String> _errorController =
@@ -299,6 +301,98 @@ class MediaPlayer {
       _errorController.add(e.toString());
       return Future.value();
     }
+  }
+
+  Future<void> openPlaylist(
+    List<MediaUrl> mediaUrls, {
+    int startIndex = 0,
+    bool play = true,
+  }) {
+    _checkDisposed();
+    try {
+      if (mediaUrls.isEmpty) {
+        throw ArgumentError('mediaUrls cannot be empty');
+      }
+      if (startIndex < 0 || startIndex >= mediaUrls.length) {
+        throw ArgumentError('startIndex is out of range');
+      }
+
+      _playlist = Playlist(
+        mediaUrls.map((url) => Media(url.url)).toList(),
+        index: startIndex,
+      );
+      _currentPlaylistIndex = startIndex;
+      _playing = play;
+      _isInitialized = false;
+      _showTip = false;
+
+      if (!_initializedController.isClosed && !_isDisposed) {
+        _initializedController.add(false);
+      }
+      if (!_showTipController.isClosed && !_isDisposed) {
+        _showTipController.add(false);
+      }
+
+      _mediaUrl = mediaUrls[startIndex];
+      _tipTime = _mediaUrl.tipTime;
+      _tipWidget = _mediaUrl.tipWidget;
+      _castWidget = _mediaUrl.castWidget;
+      _castDevicesType = _mediaUrl.castDevicesType;
+
+      return _player.open(_playlist!, play: play);
+    } catch (e) {
+      if (!_errorController.isClosed && !_isDisposed) {
+        _errorController.add(e.toString());
+      }
+      return Future.value();
+    }
+  }
+
+  Future<void> playNextVideo() {
+    _checkDisposed();
+    try {
+      if (_playlist == null) {
+        throw StateError('No playlist is currently loaded');
+      }
+
+      final playlist = _player.state.playlist;
+      if (playlist.medias.isEmpty) {
+        throw StateError('Playlist is empty');
+      }
+
+      final currentIndex = _player.state.playlist.index;
+      final nextIndex = currentIndex + 1;
+
+      if (nextIndex < playlist.medias.length) {
+        _currentPlaylistIndex = nextIndex;
+        return _player.next();
+      } else {
+        if (kDebugMode) {
+          print('Already at the last video in playlist');
+        }
+        return Future.value();
+      }
+    } catch (e) {
+      if (!_errorController.isClosed && !_isDisposed) {
+        _errorController.add(e.toString());
+      }
+      return Future.value();
+    }
+  }
+
+  bool get hasPlaylist {
+    _checkDisposed();
+    return _playlist != null;
+  }
+
+  int get currentPlaylistIndex {
+    _checkDisposed();
+    return _currentPlaylistIndex;
+  }
+
+  int get playlistLength {
+    _checkDisposed();
+    return _playlist?.medias.length ?? 0;
   }
 
   Future<void> play() {

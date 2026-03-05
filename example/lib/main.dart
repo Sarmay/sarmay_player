@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sarmay_player/sarmay_player.dart';
 import 'player_detail_page.dart';
+import 'playlist_player_page.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -43,7 +44,7 @@ class _VideoListPageState extends State<VideoListPage> {
         title: "m3u8",
         url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
         castDevicesType: DevicesType.renderer,
-        play: true
+        play: true,
       ),
       MediaUrl(
         title: "Sample Video 360 * 240",
@@ -179,6 +180,19 @@ class _VideoListPageState extends State<VideoListPage> {
                   '• 请查看控制台日志确认资源释放情况\n'
                   '• 多次进出页面测试内存泄漏',
                   style: TextStyle(fontSize: 12),
+                ),
+                const SizedBox(height: 12),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const PlaylistPlayerPage(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.playlist_play),
+                  label: const Text('播放列表示例'),
                 ),
               ],
             ),

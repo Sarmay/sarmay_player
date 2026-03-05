@@ -65,7 +65,7 @@ class _FullScreenPlayerState extends State<FullScreenPlayer>
 
   double _playbackSpeed = 1.0;
   bool _showSpeedDialog = false;
-  final List<double> _speedOptions = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0];
+  final List<double> _speedOptions = [0.5, 1.0, 1.5, 2.0];
 
   @override
   void initState() {
@@ -209,7 +209,6 @@ class _FullScreenPlayerState extends State<FullScreenPlayer>
       } else {
         SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
       }
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
       SystemChrome.setEnabledSystemUIMode(
         SystemUiMode.manual,
         overlays: SystemUiOverlay.values,
@@ -231,10 +230,14 @@ class _FullScreenPlayerState extends State<FullScreenPlayer>
         : '$minutes:$seconds';
   }
 
-  Future<bool> _onWillPop() {
+  Future<bool> _onWillPop() async {
     _restorePortraitMode();
-    Navigator.of(context).pop();
-    return Future.value(true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+    });
+    return true;
   }
 
   void _showControlsHandel() {
@@ -360,7 +363,7 @@ class _FullScreenPlayerState extends State<FullScreenPlayer>
     _dragStartX = details.globalPosition.dx;
     _dragStartY = details.globalPosition.dy;
     _dragDirection = _DragDirection.none;
-    
+
     final screenWidth = MediaQuery.of(context).size.width;
     _isDraggingLeft = details.globalPosition.dx < screenWidth / 3;
   }
@@ -369,7 +372,7 @@ class _FullScreenPlayerState extends State<FullScreenPlayer>
     if (_dragDirection == _DragDirection.none) {
       final dx = (details.globalPosition.dx - _dragStartX).abs();
       final dy = (details.globalPosition.dy - _dragStartY).abs();
-      
+
       if (dx > 20 || dy > 20) {
         if (dx > dy) {
           _dragDirection = _DragDirection.horizontal;
@@ -398,7 +401,9 @@ class _FullScreenPlayerState extends State<FullScreenPlayer>
       }
     }
 
-    if (_dragDirection == _DragDirection.horizontal && _isSeeking && _duration.inSeconds > 0) {
+    if (_dragDirection == _DragDirection.horizontal &&
+        _isSeeking &&
+        _duration.inSeconds > 0) {
       final screenWidth = MediaQuery.of(context).size.width;
       final dragProgress = details.delta.dx / screenWidth;
       final totalDuration = _duration.inMilliseconds.toDouble();
@@ -415,10 +420,13 @@ class _FullScreenPlayerState extends State<FullScreenPlayer>
     } else if (_dragDirection == _DragDirection.vertical) {
       final screenHeight = MediaQuery.of(context).size.height;
       final dragDistance = _dragStartY - details.globalPosition.dy;
-      
+
       if (_isAdjustingBrightness) {
         final brightnessChange = dragDistance / screenHeight * 2;
-        final newBrightness = (_startBrightness + brightnessChange).clamp(0.0, 1.0);
+        final newBrightness = (_startBrightness + brightnessChange).clamp(
+          0.0,
+          1.0,
+        );
         setState(() {
           _brightness = newBrightness;
         });
@@ -447,13 +455,16 @@ class _FullScreenPlayerState extends State<FullScreenPlayer>
           _isAdjustingBrightness = false;
         });
         _brightnessIndicatorTimer?.cancel();
-        _brightnessIndicatorTimer = Timer(const Duration(milliseconds: 800), () {
-          if (mounted) {
-            setState(() {
-              _showBrightnessIndicator = false;
-            });
-          }
-        });
+        _brightnessIndicatorTimer = Timer(
+          const Duration(milliseconds: 800),
+          () {
+            if (mounted) {
+              setState(() {
+                _showBrightnessIndicator = false;
+              });
+            }
+          },
+        );
       } else if (_isAdjustingVolume) {
         setState(() {
           _isAdjustingVolume = false;
@@ -468,7 +479,7 @@ class _FullScreenPlayerState extends State<FullScreenPlayer>
         });
       }
     }
-    
+
     _dragDirection = _DragDirection.none;
   }
 
@@ -486,12 +497,15 @@ class _FullScreenPlayerState extends State<FullScreenPlayer>
       final screenHeight = MediaQuery.of(context).size.height;
       final dragDistance = _dragStartY - details.globalPosition.dy;
       final brightnessChange = dragDistance / screenHeight * 2;
-      final newBrightness = (_startBrightness + brightnessChange).clamp(0.0, 1.0);
-      
+      final newBrightness = (_startBrightness + brightnessChange).clamp(
+        0.0,
+        1.0,
+      );
+
       setState(() {
         _brightness = newBrightness;
       });
-      
+
       ScreenBrightness().setScreenBrightness(newBrightness);
     }
   }
@@ -525,11 +539,11 @@ class _FullScreenPlayerState extends State<FullScreenPlayer>
       final dragDistance = _dragStartY - details.globalPosition.dy;
       final volumeChange = dragDistance / screenHeight * 2;
       final newVolume = (_startVolume + volumeChange).clamp(0.0, 1.0);
-      
+
       setState(() {
         _volume = newVolume;
       });
-      
+
       VolumeController.instance.setVolume(newVolume);
     }
   }
@@ -855,13 +869,15 @@ class _FullScreenPlayerState extends State<FullScreenPlayer>
             Icon(
               _isLongPressSeeking
                   ? Icons.speed
-                  : (_seekProgress > 0 ? Icons.fast_forward : Icons.fast_rewind),
+                  : (_seekProgress > 0
+                        ? Icons.fast_forward
+                        : Icons.fast_rewind),
               color: Colors.white,
               size: 24,
             ),
             const SizedBox(width: 8),
             Text(
-              _isLongPressSeeking ? '10x' : '${_seekSeconds}s',
+              _isLongPressSeeking ? '2x' : '${_seekSeconds}s',
               style: const TextStyle(color: Colors.white, fontSize: 18),
             ),
           ],
@@ -881,11 +897,7 @@ class _FullScreenPlayerState extends State<FullScreenPlayer>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              Icons.brightness_6,
-              color: Colors.white,
-              size: 28,
-            ),
+            const Icon(Icons.brightness_6, color: Colors.white, size: 28),
             const SizedBox(height: 8),
             Text(
               '${(_brightness * 100).toInt()}%',
@@ -918,7 +930,9 @@ class _FullScreenPlayerState extends State<FullScreenPlayer>
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              _volume == 0 ? Icons.volume_off : (_volume < 0.5 ? Icons.volume_down : Icons.volume_up),
+              _volume == 0
+                  ? Icons.volume_off
+                  : (_volume < 0.5 ? Icons.volume_down : Icons.volume_up),
               color: Colors.white,
               size: 28,
             ),
@@ -990,7 +1004,9 @@ class _FullScreenPlayerState extends State<FullScreenPlayer>
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: Colors.white,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
                           ),
                         ),
                       ),

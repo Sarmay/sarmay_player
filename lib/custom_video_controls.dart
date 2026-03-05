@@ -812,7 +812,7 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
             ),
             const SizedBox(width: 8),
             Text(
-              _isLongPressSeeking ? '10x' : '${_seekSeconds}s',
+              _isLongPressSeeking ? '2x' : '${_seekSeconds}s',
               style: const TextStyle(color: Colors.white, fontSize: 18),
             ),
           ],

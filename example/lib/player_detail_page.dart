@@ -66,6 +66,7 @@ class _PlayerDetailPageState extends State<PlayerDetailPage> {
         return true;
       },
       child: Scaffold(
+        resizeToAvoidBottomInset: false,
         appBar: AppBar(
           title: Text(widget.mediaUrl.title ?? '视频播放'),
           leading: IconButton(

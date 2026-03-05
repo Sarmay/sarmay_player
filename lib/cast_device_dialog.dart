@@ -77,13 +77,18 @@ class _CastDeviceDialogState extends State<CastDeviceDialog> {
       child: Center(
         child: Container(
           width: 400,
-          height: 500,
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.8,
+          ),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(8),
           ),
           margin: EdgeInsets.only(left: 8, right: 8),
-          child: Column(children: _columnChild()),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: _columnChild(),
+          ),
         ),
       ),
     );
@@ -121,7 +126,11 @@ class _CastDeviceDialogState extends State<CastDeviceDialog> {
             ],
           ),
         ),
-        if (widget.castWidget != null) widget.castWidget! else Text("默认提示信息"),
+        Flexible(
+          child: SingleChildScrollView(
+            child: widget.castWidget ?? const Text("默认提示信息"),
+          ),
+        ),
       ];
     }
 
@@ -180,7 +189,7 @@ class _CastDeviceDialogState extends State<CastDeviceDialog> {
         ),
 
       // 设备列表
-      Expanded(child: _buildDeviceList()),
+      Flexible(child: _buildDeviceList()),
 
       // 底部按钮
       Container(

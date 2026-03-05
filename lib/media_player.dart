@@ -528,8 +528,9 @@ class MediaPlayer {
   }
 
   Future<void> dispose() async {
-    // 先标记为已释放，防止回调中继续操作
+    if (_isDisposed) return;
     _isDisposed = true;
+
     await _bufferingController.close();
     await _playingController.close();
     await _positionController.close();
@@ -538,9 +539,7 @@ class MediaPlayer {
     await _initializedController.close();
     await _showTipController.close();
 
-    if (!_isDisposed) {
-      await _player.dispose();
-    }
+    await _player.dispose();
   }
 
   void _checkDisposed() {

@@ -222,17 +222,6 @@ class MediaPlayer {
             _isInitialized = calcInitialized;
             _initializedController.add(_isInitialized);
           }
-          if (_seekPosition != null && calcInitialized) {
-            final seekPos = _seekPosition!;
-            final shouldPlay = _seekAndPlay ?? false;
-            _seekPosition = null;
-            _seekAndPlay = null;
-            _player.seek(seekPos).then((_) {
-              if (shouldPlay) {
-                _player.play();
-              }
-            });
-          }
         } catch (e) {
           if (kDebugMode) {
             print("duration stream error: $e");
@@ -282,6 +271,9 @@ class MediaPlayer {
     try {
       _playing = play;
       _mediaUrl = mediaUrl;
+      _isInitialized = false;
+      _duration = Duration.zero;
+      _position = Duration.zero;
       _tipTime = mediaUrl.tipTime;
       _tipWidget = mediaUrl.tipWidget;
       _castWidget = mediaUrl.castWidget;
@@ -300,8 +292,34 @@ class MediaPlayer {
   }) async {
     _seekPosition = position;
     _seekAndPlay = play;
+    _isInitialized = false;
+    _duration = Duration.zero;
+    _position = Duration.zero;
     await setUrl(mediaUrl, play: false);
-    return;
+    try {
+      final duration = await _player.stream.duration
+          .where((d) => d.inMicroseconds > 0)
+          .first
+          .timeout(const Duration(seconds: 10));
+      _duration = duration;
+      _isInitialized = true;
+      if (!_initializedController.isClosed && !_isDisposed) {
+        _initializedController.add(true);
+      }
+      if (!_durationController.isClosed && !_isDisposed) {
+        _durationController.add(duration);
+      }
+      await _player.seek(_seekPosition!);
+      if (_seekAndPlay ?? false) {
+        await _player.play();
+      }
+      _seekPosition = null;
+      _seekAndPlay = null;
+    } catch (e) {
+      if (kDebugMode) {
+        print("setUrlAndSeek error: $e");
+      }
+    }
   }
 
   Future<void> play() {

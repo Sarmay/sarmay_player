@@ -126,6 +126,18 @@ class MediaPlayer {
         }
       };
 
+      _initializedController.onListen = () {
+        try {
+          if (!_initializedController.isClosed && !_isDisposed) {
+            _initializedController.add(_isInitialized);
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            print("initializedController onListen error: $e");
+          }
+        }
+      };
+
       _player.stream.position.listen((Duration position) {
         try {
           if (_isDisposed) {

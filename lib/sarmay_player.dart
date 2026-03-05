@@ -72,10 +72,13 @@ class _SarmayPlayerState extends State<SarmayPlayer> {
   }
 
   void setupStreams() {
-    widget.player.initialized.listen((bool initialized) {
+    widget.player.initialized.listen((bool initialized) async {
       if (initialized && !_hasTriggeredInit && widget.onInitialized != null) {
         _hasTriggeredInit = true;
-        widget.onInitialized!();
+        await Future.delayed(const Duration(milliseconds: 100));
+        if (mounted && !_hasError) {
+          widget.onInitialized!();
+        }
       }
       if (!initialized) {
         _hasTriggeredInit = false;

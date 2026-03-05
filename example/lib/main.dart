@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_sticky_header/flutter_sticky_header.dart';
 import 'package:sarmay_player/sarmay_player.dart';
+import 'player_detail_page.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  // Necessary initialization for package:media_kit.
   ensurePlayerInitialized();
   runApp(const MyApp());
 }
@@ -16,46 +15,28 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      // 将MediaPlayerManager放在顶层，以便在整个应用中访问
-      home: PlayerScreen(),
+      home: const VideoListPage(),
     );
   }
 }
 
-class PlayerScreen extends StatefulWidget {
-  const PlayerScreen({super.key});
+class VideoListPage extends StatefulWidget {
+  const VideoListPage({super.key});
 
   @override
-  State<PlayerScreen> createState() => _PlayerScreenState();
+  State<VideoListPage> createState() => _VideoListPageState();
 }
 
-class _PlayerScreenState extends State<PlayerScreen> {
-  List<MediaUrl> sampleList = [];
-
-  late MediaUrl curPlay;
-  int curIndex = 0;
-
-  final MediaPlayer player = MediaPlayer(
-    playerConfig: const PlayerConfiguration(),
-    controllerConfig: const VideoControllerConfiguration(),
-  );
+class _VideoListPageState extends State<VideoListPage> {
+  final List<MediaUrl> _videoList = [];
 
   @override
   void initState() {
-    sampleList = [
+    super.initState();
+    _videoList.addAll([
       MediaUrl(
         title: "Aliyun",
         url: "http://player.alicdn.com/video/aliyunmedia.mp4",
-        // tipTime: Duration(seconds: 30),
-        // tipWidget: InkWell(
-        //   onTap: () {
-        //     print("点击了呀");
-        //     player.closeTip();
-        //   },
-        //   child: Container(color: Colors.white, child: Text("测试")),
-        // ),
-        // castWidget: Text("请先付费吧"),
-        // castDevicesType: DevicesType.all,
       ),
       MediaUrl(
         title: "m3u8",
@@ -147,155 +128,87 @@ class _PlayerScreenState extends State<PlayerScreen> {
         title: "Protocol not found",
         url: "noprotocol://assets/butterfly.mp4",
       ),
-    ];
-    curPlay = sampleList[curIndex];
-    // 初始化时预加载第一个视频
-    super.initState();
-    player.setUrlAndSeek(curPlay, Duration(seconds: 56), play: false);
+    ]);
   }
 
-  @override
-  void dispose() async {
-    await player.dispose();
-    super.dispose();
-  }
+  void _navigateToPlayer(int index) {
+    debugPrint('=== 导航到播放器页面 ===');
+    debugPrint('视频索引: $index');
+    debugPrint('视频标题: ${_videoList[index].title}');
 
-  void playPrevious() {
-    setState(() {
-      curIndex = (curIndex - 1) % sampleList.length;
-      if (curIndex < 0) curIndex = sampleList.length - 1;
-      curPlay = sampleList[curIndex];
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PlayerDetailPage(
+          mediaUrl: _videoList[index],
+          index: index,
+          totalCount: _videoList.length,
+        ),
+      ),
+    ).then((_) {
+      debugPrint('=== 从播放器页面返回 ===');
+      debugPrint('检查是否有内存泄漏...');
     });
-    // player.open(curPlay, play: true);
-    player.setUrlAndSeek(curPlay, Duration(seconds: 30), play: true);
-  }
-
-  void playNext() async {
-    await player.stopAndInit();
-    setState(() {
-      curIndex = (curIndex + 1) % sampleList.length;
-      curPlay = sampleList[curIndex];
-    });
-    Future.delayed(Duration(seconds: 10), () {
-      // player.open(curPlay, play: true);
-      player.setUrlAndSeek(curPlay, Duration(seconds: 30), play: true);
-    });
-  }
-
-  void playAtIndex(int index) {
-    if (index >= 0 && index < sampleList.length) {
-      setState(() {
-        curIndex = index;
-        curPlay = sampleList[curIndex];
-      });
-      // player.open(curPlay, play: true);
-      player.setUrlAndSeek(curPlay, Duration(seconds: 30), play: true);
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Sarmay测试视频投屏和播放器')),
-      body: CustomScrollView(
-        slivers: [
-          SliverStickyHeader(
-            header: AspectRatio(
-              aspectRatio: 16 / 9,
-              child: SarmayPlayer(
-                player: player,
-                controller: player.videoController,
-                onPosUpdate: (position) {
-                  // 保存播放位置到历史记录
-                  print('当前播放位置: ${position.inSeconds}秒');
-                },
-                posUpdateInterval: const Duration(seconds: 10), // 可选，默认5秒
-                onCompleted: (bool completed) {
-                  print("主页面completed：$completed");
-                  if (completed) {
-                    playNext();
-                  }
-                },
-                onInitialized: (bool initialized) {
-                  print("主页面initialized：$initialized");
-                  if (initialized) {
-                    // player.seek(Duration(seconds: 56));
-                  }
-                },
-                onError: (String errMsg) {
-                  print("主页面errMsg：$errMsg");
-                },
-              ),
-            ),
-            sliver: SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, i) => Column(
-                  children: [
-                    const SizedBox(height: 16),
-                    // 显示当前播放的视频标题
-                    InkWell(
-                      onTap: () {
-                        player.seek(Duration(seconds: 56));
-                      },
-                      child: Text(
-                        "当前播放: ${curPlay.title ?? '未命名视频'}",
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    // 控制按钮
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        MaterialButton(
-                          color: Colors.blue,
-                          onPressed: playPrevious,
-                          child: const Text(
-                            "上一个",
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        MaterialButton(
-                          color: Colors.red,
-                          onPressed: playNext,
-                          child: const Text(
-                            "下一个",
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    // 视频列表选择器
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Column(
-                        children: sampleList.asMap().entries.map((entry) {
-                          final index = entry.key;
-                          final mediaUrl = entry.value;
-                          return ListTile(
-                            title: Text(mediaUrl.title ?? '未命名视频'),
-                            subtitle: Text(
-                              mediaUrl.url,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            tileColor: index == curIndex
-                                ? Colors.blue.shade100
-                                : null,
-                            onTap: () => playAtIndex(index),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                  ],
+      appBar: AppBar(title: const Text('Sarmay播放器测试')),
+      body: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            color: Colors.blue.shade50,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '测试说明',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-                childCount: 1,
-              ),
+                const SizedBox(height: 8),
+                const Text(
+                  '• 点击视频列表项进入播放器页面\n'
+                  '• 返回时会自动释放播放器资源\n'
+                  '• 请查看控制台日志确认资源释放情况\n'
+                  '• 多次进出页面测试内存泄漏',
+                  style: TextStyle(fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: _videoList.length,
+              itemBuilder: (context, index) {
+                final video = _videoList[index];
+                return Card(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  child: ListTile(
+                    leading: CircleAvatar(child: Text('${index + 1}')),
+                    title: Text(
+                      video.title ?? '未命名视频',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    subtitle: Text(
+                      video.url,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 11),
+                    ),
+                    trailing: const Icon(Icons.play_circle_outline),
+                    onTap: () => _navigateToPlayer(index),
+                  ),
+                );
+              },
             ),
           ),
         ],

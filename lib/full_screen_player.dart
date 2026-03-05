@@ -686,6 +686,18 @@ class _FullScreenPlayerState extends State<FullScreenPlayer>
               _onWillPop();
             },
           ),
+          Expanded(
+            child: Text(
+              widget.player.mediaUrl.title ?? '',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
         ],
       ),
     );

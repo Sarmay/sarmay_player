@@ -400,7 +400,7 @@ class _FullScreenPlayerState extends State<FullScreenPlayer>
 
     if (_dragDirection == _DragDirection.horizontal && _isSeeking && _duration.inSeconds > 0) {
       final screenWidth = MediaQuery.of(context).size.width;
-      final dragProgress = details.primaryDelta! / screenWidth;
+      final dragProgress = details.delta.dx / screenWidth;
       final totalDuration = _duration.inMilliseconds.toDouble();
       final seekAmount = dragProgress * totalDuration * 2;
       final newPosition = Duration(
@@ -723,7 +723,7 @@ class _FullScreenPlayerState extends State<FullScreenPlayer>
   Widget _buildCenterControls() {
     return Expanded(
       child: Center(
-        child: _isBuffering
+        child: _isBuffering && !_isSeeking && !_isLongPressSeeking
             ? const SizedBox(
                 width: 60,
                 height: 60,

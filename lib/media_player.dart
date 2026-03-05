@@ -336,12 +336,6 @@ class MediaPlayer {
 
   Future<void> seek(Duration position) {
     _checkDisposed();
-    if (_playing) {
-      _isBuffering = true;
-      if (!_bufferingController.isClosed && !_isDisposed) {
-        _bufferingController.add(_isBuffering);
-      }
-    }
     return _player.seek(position);
   }
 

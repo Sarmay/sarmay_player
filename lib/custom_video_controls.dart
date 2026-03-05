@@ -367,7 +367,7 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
         _isSeeking &&
         _duration.inSeconds > 0) {
       final screenWidth = MediaQuery.of(context).size.width;
-      final dragProgress = details.primaryDelta! / screenWidth;
+      final dragProgress = details.delta.dx / screenWidth;
       final totalDuration = _duration.inMilliseconds.toDouble();
       final seekAmount = dragProgress * totalDuration * 2;
       final newPosition = Duration(
@@ -671,7 +671,7 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
   Widget _buildCenterControls() {
     return Expanded(
       child: Center(
-        child: _isBuffering
+        child: _isBuffering && !_isSeeking && !_isLongPressSeeking
             ? SizedBox(
                 width: 60,
                 height: 60,

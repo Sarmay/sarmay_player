@@ -853,13 +853,15 @@ class _FullScreenPlayerState extends State<FullScreenPlayer>
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              _seekProgress > 0 ? Icons.fast_forward : Icons.fast_rewind,
+              _isLongPressSeeking
+                  ? Icons.speed
+                  : (_seekProgress > 0 ? Icons.fast_forward : Icons.fast_rewind),
               color: Colors.white,
               size: 24,
             ),
             const SizedBox(width: 8),
             Text(
-              '${_seekSeconds}s',
+              _isLongPressSeeking ? '10x' : '${_seekSeconds}s',
               style: const TextStyle(color: Colors.white, fontSize: 18),
             ),
           ],

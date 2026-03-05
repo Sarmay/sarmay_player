@@ -40,11 +40,7 @@ class _PlayerDetailPageState extends State<PlayerDetailPage> {
 
   void _initPlayer() {
     if (_isDisposed) return;
-    player.setUrlAndSeek(
-      widget.mediaUrl,
-      Duration(seconds: 30),
-      play: widget.mediaUrl.play,
-    );
+    player.setUrl(widget.mediaUrl, play: widget.mediaUrl.play);
   }
 
   @override
@@ -91,11 +87,12 @@ class _PlayerDetailPageState extends State<PlayerDetailPage> {
                   debugPrint('播放位置: ${position.inSeconds}秒');
                 },
                 posUpdateInterval: const Duration(seconds: 10),
-                onCompleted: (completed) {
-                  debugPrint("播放完成: $completed");
+                onCompleted: () {
+                  debugPrint("播放完成");
                 },
-                onInitialized: (initialized) {
-                  debugPrint("播放器初始化: $initialized");
+                onInitialized: () {
+                  debugPrint("播放器初始化完成");
+                  player.seek(Duration(seconds: 30));
                 },
                 onError: (errMsg) {
                   debugPrint("播放错误: $errMsg");

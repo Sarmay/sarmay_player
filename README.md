@@ -157,7 +157,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
     curPlay = sampleList[curIndex];
     // 初始化时预加载第一个视频
     super.initState();
-    player.setUrlAndSeek(curPlay, Duration(seconds: 56), play: false);
+    player.setUrl(curPlay, play: false);
   }
 
   @override
@@ -173,7 +173,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
       curPlay = sampleList[curIndex];
     });
     // player.open(curPlay, play: true);
-    player.setUrlAndSeek(curPlay, Duration(seconds: 30), play: true);
+    player.setUrl(curPlay, play: true);
   }
 
   void playNext() async {
@@ -184,7 +184,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
     });
     Future.delayed(Duration(seconds: 10), () {
       // player.open(curPlay, play: true);
-      player.setUrlAndSeek(curPlay, Duration(seconds: 30), play: true);
+      player.setUrl(curPlay, play: true);
     });
   }
 
@@ -195,7 +195,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
         curPlay = sampleList[curIndex];
       });
       // player.open(curPlay, play: true);
-      player.setUrlAndSeek(curPlay, Duration(seconds: 30), play: true);
+      player.setUrl(curPlay, play: true);
     }
   }
 
@@ -210,17 +210,12 @@ class _PlayerScreenState extends State<PlayerScreen> {
               SarmayPlayer(
                 player: player,
                 controller: player.videoController,
-                onCompleted: (bool completed) {
-                  print("主页面completed：$completed");
-                  if (completed) {
-                    playNext();
-                  }
+                onCompleted: () {
+                  print("主页面播放完成");
+                  playNext();
                 },
-                onInitialized: (bool initialized) {
-                  print("主页面initialized：$initialized");
-                  if (initialized) {
-                    // player.seek(Duration(seconds: 56));
-                  }
+                onInitialized: () {
+                  print("主页面初始化完成");
                 },
                 onError: (String errMsg) {
                   print("主页面errMsg：$errMsg");

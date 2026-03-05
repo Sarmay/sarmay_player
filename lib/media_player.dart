@@ -29,6 +29,7 @@ class MediaPlayer {
   DevicesType _castDevicesType = DevicesType.all;
   Duration? _seekPosition;
   bool? _seekAndPlay;
+  bool _isSeekingToPosition = false;
 
   // 自定义初始化状态流
   final StreamController<String> _errorController =
@@ -128,6 +129,9 @@ class MediaPlayer {
       _player.stream.position.listen((Duration position) {
         try {
           if (_isDisposed) {
+            return;
+          }
+          if (_isSeekingToPosition) {
             return;
           }
           _position = position;
@@ -282,43 +286,6 @@ class MediaPlayer {
     } catch (e) {
       _errorController.add(e.toString());
       return Future.value();
-    }
-  }
-
-  Future<void> setUrlAndSeek(
-    MediaUrl mediaUrl,
-    Duration position, {
-    bool play = true,
-  }) async {
-    _seekPosition = position;
-    _seekAndPlay = play;
-    _isInitialized = false;
-    _duration = Duration.zero;
-    _position = Duration.zero;
-    await setUrl(mediaUrl, play: false);
-    try {
-      final duration = await _player.stream.duration
-          .where((d) => d.inMicroseconds > 0)
-          .first
-          .timeout(const Duration(seconds: 10));
-      _duration = duration;
-      _isInitialized = true;
-      if (!_initializedController.isClosed && !_isDisposed) {
-        _initializedController.add(true);
-      }
-      if (!_durationController.isClosed && !_isDisposed) {
-        _durationController.add(duration);
-      }
-      await _player.seek(_seekPosition!);
-      if (_seekAndPlay ?? false) {
-        await _player.play();
-      }
-      _seekPosition = null;
-      _seekAndPlay = null;
-    } catch (e) {
-      if (kDebugMode) {
-        print("setUrlAndSeek error: $e");
-      }
     }
   }
 

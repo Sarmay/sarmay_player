@@ -15,8 +15,8 @@ void ensurePlayerInitialized({String? libMpv}) {
 class SarmayPlayer extends StatefulWidget {
   final MediaPlayer player;
   final VideoController controller;
-  final void Function(bool completed)? onCompleted;
-  final void Function(bool initialized)? onInitialized;
+  final void Function()? onCompleted;
+  final void Function()? onInitialized;
   final void Function(String errMsg)? onError;
   final void Function(Duration position)? onPosUpdate;
   final Duration posUpdateInterval;
@@ -40,6 +40,7 @@ class _SarmayPlayerState extends State<SarmayPlayer> {
   bool _isInitialized = false;
   bool _hasError = false;
   String _errorMsg = "";
+  bool _hasTriggeredInit = false;
 
   Timer? _posUpdateTimer;
   Duration _lastPosition = Duration.zero;
@@ -72,8 +73,12 @@ class _SarmayPlayerState extends State<SarmayPlayer> {
 
   void setupStreams() {
     widget.player.initialized.listen((bool initialized) {
-      if (widget.onInitialized != null) {
-        widget.onInitialized!(initialized);
+      if (initialized && !_hasTriggeredInit && widget.onInitialized != null) {
+        _hasTriggeredInit = true;
+        widget.onInitialized!();
+      }
+      if (!initialized) {
+        _hasTriggeredInit = false;
       }
       if (mounted) {
         setState(() {
@@ -97,8 +102,8 @@ class _SarmayPlayerState extends State<SarmayPlayer> {
     });
 
     widget.player.completed.listen((bool completed) {
-      if (widget.onCompleted != null) {
-        widget.onCompleted!(completed);
+      if (completed && widget.onCompleted != null) {
+        widget.onCompleted!();
       }
     });
   }

@@ -40,7 +40,11 @@ class _PlayerDetailPageState extends State<PlayerDetailPage> {
 
   void _initPlayer() {
     if (_isDisposed) return;
-    player.setUrlAndSeek(widget.mediaUrl, Duration(seconds: 30), play: false);
+    player.setUrlAndSeek(
+      widget.mediaUrl,
+      Duration(seconds: 30),
+      play: widget.mediaUrl.play,
+    );
   }
 
   @override

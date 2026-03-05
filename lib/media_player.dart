@@ -28,6 +28,7 @@ class MediaPlayer {
   Widget? _castWidget;
   DevicesType _castDevicesType = DevicesType.all;
   Duration? _seekPosition;
+  bool? _seekAndPlay;
 
   // 自定义初始化状态流
   final StreamController<String> _errorController =
@@ -132,8 +133,14 @@ class MediaPlayer {
           _position = position;
           if (_seekPosition != null) {
             final seekPos = _seekPosition!;
+            final shouldPlay = _seekAndPlay ?? false;
             _seekPosition = null;
-            _player.seek(seekPos);
+            _seekAndPlay = null;
+            _player.seek(seekPos).then((_) {
+              if (shouldPlay) {
+                _player.play();
+              }
+            });
           }
           if (!_positionController.isClosed && !_isDisposed) {
             _positionController.add(position);
@@ -294,9 +301,9 @@ class MediaPlayer {
     Duration position, {
     bool play = true,
   }) async {
-    await setUrl(mediaUrl, play: play);
-    _position = position;
     _seekPosition = position;
+    _seekAndPlay = play;
+    await setUrl(mediaUrl, play: false);
     return;
   }
 
@@ -553,6 +560,7 @@ class MediaUrl {
   const MediaUrl({
     required this.url,
     this.title,
+    this.play = false,
     this.tipTime,
     this.tipWidget,
     this.castWidget,
@@ -561,6 +569,7 @@ class MediaUrl {
 
   final String? title;
   final String url;
+  final bool play;
   final Duration? tipTime;
   final Widget? tipWidget;
   final Widget? castWidget;
@@ -569,6 +578,7 @@ class MediaUrl {
   MediaUrl.fromJson(Map<String, dynamic> json)
     : title = json['title'],
       url = json['url'],
+      play = json['play'],
       tipTime = json['tipTime'] is int
           ? Duration(seconds: json['tipTime'])
           : json['tipTime'],
@@ -584,6 +594,7 @@ class MediaUrl {
   Map<String, dynamic> toJson() => {
     'title': title,
     'url': url,
+    'play': play,
     'tipTime': tipTime,
     'tipWidget': tipWidget,
     'castWidget': castWidget,

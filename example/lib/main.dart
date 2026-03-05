@@ -37,6 +37,7 @@ class _VideoListPageState extends State<VideoListPage> {
       MediaUrl(
         title: "Aliyun",
         url: "http://player.alicdn.com/video/aliyunmedia.mp4",
+        play: true,
       ),
       MediaUrl(
         title: "m3u8",

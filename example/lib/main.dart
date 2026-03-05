@@ -43,6 +43,7 @@ class _VideoListPageState extends State<VideoListPage> {
         title: "m3u8",
         url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
         castDevicesType: DevicesType.renderer,
+        play: true
       ),
       MediaUrl(
         title: "Sample Video 360 * 240",

@@ -131,17 +131,6 @@ class MediaPlayer {
             return;
           }
           _position = position;
-          if (_seekPosition != null) {
-            final seekPos = _seekPosition!;
-            final shouldPlay = _seekAndPlay ?? false;
-            _seekPosition = null;
-            _seekAndPlay = null;
-            _player.seek(seekPos).then((_) {
-              if (shouldPlay) {
-                _player.play();
-              }
-            });
-          }
           if (!_positionController.isClosed && !_isDisposed) {
             _positionController.add(position);
           }
@@ -232,6 +221,17 @@ class MediaPlayer {
               _isInitialized != calcInitialized) {
             _isInitialized = calcInitialized;
             _initializedController.add(_isInitialized);
+          }
+          if (_seekPosition != null && calcInitialized) {
+            final seekPos = _seekPosition!;
+            final shouldPlay = _seekAndPlay ?? false;
+            _seekPosition = null;
+            _seekAndPlay = null;
+            _player.seek(seekPos).then((_) {
+              if (shouldPlay) {
+                _player.play();
+              }
+            });
           }
         } catch (e) {
           if (kDebugMode) {

@@ -316,6 +316,16 @@ class MediaPlayer {
     return _player.setRate(rate);
   }
 
+  Future<void> setVolume(double volume) {
+    _checkDisposed();
+    return _player.setVolume(volume.clamp(0.0, 100.0));
+  }
+
+  Future<double> getVolume() async {
+    _checkDisposed();
+    return _player.state.volume;
+  }
+
   Future<void> stop() {
     _checkDisposed();
     _mediaUrl = MediaUrl(url: '');

@@ -1,10 +1,15 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:screen_brightness/screen_brightness.dart';
 import 'package:sarmay_player/cast_device_dialog.dart';
 import 'package:sarmay_player/full_screen_player.dart';
 import 'package:sarmay_player/media_player.dart';
+import 'package:volume_controller/volume_controller.dart';
+
+enum _DragDirection { none, horizontal, vertical }
 
 class CustomVideoControls extends StatefulWidget {
   final MediaPlayer player;
@@ -40,6 +45,37 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
 
   static const int _seekSeconds = 10;
 
+  double _brightness = 0.5;
+  double _volume = 1.0;
+  bool _isAdjustingBrightness = false;
+  bool _isAdjustingVolume = false;
+  double _dragStartX = 0;
+  double _dragStartY = 0;
+  double _startBrightness = 0.5;
+  double _startVolume = 1.0;
+
+  _DragDirection _dragDirection = _DragDirection.none;
+  bool _isDraggingLeft = false;
+
+  bool _showBrightnessIndicator = false;
+  bool _showVolumeIndicator = false;
+  Timer? _brightnessIndicatorTimer;
+  Timer? _volumeIndicatorTimer;
+
+  double _playbackSpeed = 1.0;
+  bool _showSpeedDialog = false;
+  final List<double> _speedOptions = [
+    0.5,
+    0.75,
+    1.0,
+    1.25,
+    1.5,
+    1.75,
+    2.0,
+    2.5,
+    3.0,
+  ];
+
   Duration? _lastHistoryPosition;
   DateTime _lastHistorySaveTime = DateTime.now();
   static const Duration _historySaveInterval = Duration(seconds: 5);
@@ -49,12 +85,45 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
     super.initState();
     setupStreams();
     _showControlsHandel();
+    _initBrightness();
+    _initVolume();
+  }
+
+  Future<void> _initBrightness() async {
+    try {
+      final brightness = await ScreenBrightness().current;
+      setState(() {
+        _brightness = brightness;
+      });
+    } catch (e) {
+      debugPrint('获取亮度失败: $e');
+    }
+  }
+
+  Future<void> _initVolume() async {
+    try {
+      VolumeController.instance.addListener((volume) {
+        if (mounted) {
+          setState(() {
+            _volume = volume;
+          });
+        }
+      }, fetchInitialVolume: true);
+      final volume = await VolumeController.instance.getVolume();
+      setState(() {
+        _volume = volume;
+      });
+    } catch (e) {
+      debugPrint('获取音量失败: $e');
+    }
   }
 
   @override
   void dispose() {
     _hideControlsTimer?.cancel();
     _longPressTimer?.cancel();
+    _brightnessIndicatorTimer?.cancel();
+    _volumeIndicatorTimer?.cancel();
     _playingSubscription.cancel();
     _durationSubscription.cancel();
     _positionSubscription.cancel();
@@ -252,6 +321,223 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
     }
   }
 
+  void _onPanStart(DragStartDetails details) {
+    _dragStartX = details.globalPosition.dx;
+    _dragStartY = details.globalPosition.dy;
+    _dragDirection = _DragDirection.none;
+
+    final screenWidth = MediaQuery.of(context).size.width;
+    _isDraggingLeft = details.globalPosition.dx < screenWidth / 3;
+  }
+
+  void _onPanUpdate(DragUpdateDetails details) {
+    if (_dragDirection == _DragDirection.none) {
+      final dx = (details.globalPosition.dx - _dragStartX).abs();
+      final dy = (details.globalPosition.dy - _dragStartY).abs();
+
+      if (dx > 20 || dy > 20) {
+        if (dx > dy) {
+          _dragDirection = _DragDirection.horizontal;
+          if (_duration.inSeconds > 0) {
+            setState(() {
+              _isSeeking = true;
+              _seekPosition = _position;
+            });
+          }
+        } else {
+          _dragDirection = _DragDirection.vertical;
+          if (_isDraggingLeft) {
+            _startBrightness = _brightness;
+            setState(() {
+              _isAdjustingBrightness = true;
+              _showBrightnessIndicator = true;
+            });
+          } else {
+            _startVolume = _volume;
+            setState(() {
+              _isAdjustingVolume = true;
+              _showVolumeIndicator = true;
+            });
+          }
+        }
+      }
+    }
+
+    if (_dragDirection == _DragDirection.horizontal &&
+        _isSeeking &&
+        _duration.inSeconds > 0) {
+      final screenWidth = MediaQuery.of(context).size.width;
+      final dragProgress = details.primaryDelta! / screenWidth;
+      final totalDuration = _duration.inMilliseconds.toDouble();
+      final seekAmount = dragProgress * totalDuration * 2;
+      final newPosition = Duration(
+        milliseconds: (_seekPosition.inMilliseconds + seekAmount.toInt()).clamp(
+          0,
+          _duration.inMilliseconds,
+        ),
+      );
+      setState(() {
+        _seekPosition = newPosition;
+      });
+    } else if (_dragDirection == _DragDirection.vertical) {
+      final screenHeight = MediaQuery.of(context).size.height;
+      final dragDistance = _dragStartY - details.globalPosition.dy;
+
+      if (_isAdjustingBrightness) {
+        final brightnessChange = dragDistance / screenHeight * 2;
+        final newBrightness = (_startBrightness + brightnessChange).clamp(
+          0.0,
+          1.0,
+        );
+        setState(() {
+          _brightness = newBrightness;
+        });
+        ScreenBrightness().setScreenBrightness(newBrightness);
+      } else if (_isAdjustingVolume) {
+        final volumeChange = dragDistance / screenHeight * 2;
+        final newVolume = (_startVolume + volumeChange).clamp(0.0, 1.0);
+        setState(() {
+          _volume = newVolume;
+        });
+        VolumeController.instance.setVolume(newVolume);
+      }
+    }
+  }
+
+  void _onPanEnd(DragEndDetails details) {
+    if (_dragDirection == _DragDirection.horizontal && _isSeeking) {
+      widget.player.seek(_seekPosition);
+      setState(() {
+        _isSeeking = false;
+        _position = _seekPosition;
+      });
+    } else if (_dragDirection == _DragDirection.vertical) {
+      if (_isAdjustingBrightness) {
+        setState(() {
+          _isAdjustingBrightness = false;
+        });
+        _brightnessIndicatorTimer?.cancel();
+        _brightnessIndicatorTimer = Timer(
+          const Duration(milliseconds: 800),
+          () {
+            if (mounted) {
+              setState(() {
+                _showBrightnessIndicator = false;
+              });
+            }
+          },
+        );
+      } else if (_isAdjustingVolume) {
+        setState(() {
+          _isAdjustingVolume = false;
+        });
+        _volumeIndicatorTimer?.cancel();
+        _volumeIndicatorTimer = Timer(const Duration(milliseconds: 800), () {
+          if (mounted) {
+            setState(() {
+              _showVolumeIndicator = false;
+            });
+          }
+        });
+      }
+    }
+
+    _dragDirection = _DragDirection.none;
+  }
+
+  void _onBrightnessDragStart(DragStartDetails details) {
+    _dragStartY = details.globalPosition.dy;
+    _startBrightness = _brightness;
+    setState(() {
+      _isAdjustingBrightness = true;
+      _showBrightnessIndicator = true;
+    });
+  }
+
+  void _onBrightnessDragUpdate(DragUpdateDetails details) {
+    if (_isAdjustingBrightness) {
+      final screenHeight = MediaQuery.of(context).size.height;
+      final dragDistance = _dragStartY - details.globalPosition.dy;
+      final brightnessChange = dragDistance / screenHeight * 2;
+      final newBrightness = (_startBrightness + brightnessChange).clamp(
+        0.0,
+        1.0,
+      );
+
+      setState(() {
+        _brightness = newBrightness;
+      });
+
+      ScreenBrightness().setScreenBrightness(newBrightness);
+    }
+  }
+
+  void _onBrightnessDragEnd(DragEndDetails details) {
+    setState(() {
+      _isAdjustingBrightness = false;
+    });
+    _brightnessIndicatorTimer?.cancel();
+    _brightnessIndicatorTimer = Timer(const Duration(milliseconds: 800), () {
+      if (mounted) {
+        setState(() {
+          _showBrightnessIndicator = false;
+        });
+      }
+    });
+  }
+
+  void _onVolumeDragStart(DragStartDetails details) {
+    _dragStartY = details.globalPosition.dy;
+    _startVolume = _volume;
+    setState(() {
+      _isAdjustingVolume = true;
+      _showVolumeIndicator = true;
+    });
+  }
+
+  void _onVolumeDragUpdate(DragUpdateDetails details) {
+    if (_isAdjustingVolume) {
+      final screenHeight = MediaQuery.of(context).size.height;
+      final dragDistance = _dragStartY - details.globalPosition.dy;
+      final volumeChange = dragDistance / screenHeight * 2;
+      final newVolume = (_startVolume + volumeChange).clamp(0.0, 1.0);
+
+      setState(() {
+        _volume = newVolume;
+      });
+
+      VolumeController.instance.setVolume(newVolume);
+    }
+  }
+
+  void _onVolumeDragEnd(DragEndDetails details) {
+    setState(() {
+      _isAdjustingVolume = false;
+    });
+    _volumeIndicatorTimer?.cancel();
+    _volumeIndicatorTimer = Timer(const Duration(milliseconds: 800), () {
+      if (mounted) {
+        setState(() {
+          _showVolumeIndicator = false;
+        });
+      }
+    });
+  }
+
+  void _showSpeedSelectionDialog() {
+    setState(() {
+      _showSpeedDialog = true;
+    });
+  }
+
+  void _setPlaybackSpeed(double speed) {
+    setState(() {
+      _playbackSpeed = speed;
+      _showSpeedDialog = false;
+    });
+    widget.player.setRate(speed);
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_showTip) {
@@ -271,9 +557,9 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
     }
 
     return GestureDetector(
-      onHorizontalDragStart: _onHorizontalDragStart,
-      onHorizontalDragUpdate: _onHorizontalDragUpdate,
-      onHorizontalDragEnd: _onHorizontalDragEnd,
+      onPanStart: _onPanStart,
+      onPanUpdate: _onPanUpdate,
+      onPanEnd: _onPanEnd,
       behavior: HitTestBehavior.opaque,
       child: Stack(
         children: [
@@ -285,6 +571,9 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
             _buildControlsOverlay(),
           if (_isSeeking) _buildSeekIndicator(),
           if (_seekProgress != 0.0) _buildSeekHint(),
+          if (_showBrightnessIndicator) _buildBrightnessIndicator(),
+          if (_showVolumeIndicator) _buildVolumeIndicator(),
+          if (_showSpeedDialog) _buildSpeedDialog(),
         ],
       ),
     );
@@ -453,6 +742,22 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
             _formatDuration(_duration),
             style: const TextStyle(color: Colors.white),
           ),
+          GestureDetector(
+            onTap: () {
+              if (!_showControls) {
+                _showControlsHandel();
+                return;
+              }
+              _showSpeedSelectionDialog();
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: Text(
+                '${_playbackSpeed}x',
+                style: const TextStyle(color: Colors.white, fontSize: 14),
+              ),
+            ),
+          ),
           IconButton(
             padding: EdgeInsetsGeometry.zero,
             icon: const Icon(Icons.fullscreen, color: Colors.white),
@@ -507,6 +812,153 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
               style: const TextStyle(color: Colors.white, fontSize: 18),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBrightnessIndicator() {
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.black54,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.brightness_6, color: Colors.white, size: 28),
+            const SizedBox(height: 8),
+            Text(
+              '${(_brightness * 100).toInt()}%',
+              style: const TextStyle(color: Colors.white, fontSize: 16),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: 100,
+              child: LinearProgressIndicator(
+                value: _brightness,
+                backgroundColor: Colors.grey,
+                valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVolumeIndicator() {
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.black54,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              _volume == 0
+                  ? Icons.volume_off
+                  : (_volume < 0.5 ? Icons.volume_down : Icons.volume_up),
+              color: Colors.white,
+              size: 28,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '${(_volume * 100).toInt()}%',
+              style: const TextStyle(color: Colors.white, fontSize: 16),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: 100,
+              child: LinearProgressIndicator(
+                value: _volume,
+                backgroundColor: Colors.grey,
+                valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSpeedDialog() {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _showSpeedDialog = false;
+        });
+      },
+      child: Container(
+        color: Colors.black54,
+        child: Center(
+          child: Container(
+            width: 280,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey[900],
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  '播放速度',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _speedOptions.map((speed) {
+                    final isSelected = speed == _playbackSpeed;
+                    return GestureDetector(
+                      onTap: () => _setPlaybackSpeed(speed),
+                      child: Container(
+                        width: 70,
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(
+                          color: isSelected ? Colors.red : Colors.grey[800],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          '${speed}x',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 16),
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _showSpeedDialog = false;
+                    });
+                  },
+                  child: const Text(
+                    '取消',
+                    style: TextStyle(color: Colors.white70),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

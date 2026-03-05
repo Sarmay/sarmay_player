@@ -1,10 +1,6 @@
 import 'dart:async';
-import 'dart:io';
-import 'dart:math' as math;
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:screen_brightness/screen_brightness.dart';
 import 'package:sarmay_player/media_player.dart';
@@ -71,7 +67,7 @@ class _FullScreenPlayerState extends State<FullScreenPlayer>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _setLandscapeFullScreen();
+    defaultEnterNativeFullscreen();
     setupStreams();
     _showControlsHandel();
     _initBrightness();
@@ -125,7 +121,7 @@ class _FullScreenPlayerState extends State<FullScreenPlayer>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      _setLandscapeFullScreen();
+      defaultEnterNativeFullscreen();
     }
   }
 
@@ -180,46 +176,6 @@ class _FullScreenPlayerState extends State<FullScreenPlayer>
     });
   }
 
-  void _setLandscapeFullScreen() {
-    try {
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-
-      SystemChrome.setPreferredOrientations([
-        DeviceOrientation.landscapeLeft,
-        DeviceOrientation.landscapeRight,
-      ]).then((val) {
-        if (_isPlaying && Platform.isIOS) {
-          widget.player.pause();
-          widget.player.play();
-        }
-      });
-
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
-    } catch (e) {
-      if (kDebugMode) {
-        print('设置全屏模式失败: $e');
-      }
-    }
-  }
-
-  void _restorePortraitMode() {
-    try {
-      if (Platform.isIOS) {
-        SystemChrome.setPreferredOrientations([]);
-      } else {
-        SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-      }
-      SystemChrome.setEnabledSystemUIMode(
-        SystemUiMode.manual,
-        overlays: SystemUiOverlay.values,
-      );
-    } catch (e) {
-      if (kDebugMode) {
-        print('恢复竖屏模式失败: $e');
-      }
-    }
-  }
-
   String _formatDuration(Duration duration) {
     String twoDigits(int n) => n.toString().padLeft(2, '0');
     final hours = twoDigits(duration.inHours);
@@ -231,7 +187,7 @@ class _FullScreenPlayerState extends State<FullScreenPlayer>
   }
 
   Future<bool> _onWillPop() async {
-    _restorePortraitMode();
+    await defaultExitNativeFullscreen();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         Navigator.of(context).pop();
@@ -967,7 +923,6 @@ class _FullScreenPlayerState extends State<FullScreenPlayer>
         color: Colors.black54,
         child: Center(
           child: Container(
-            width: 280,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.grey[900],
@@ -993,11 +948,13 @@ class _FullScreenPlayerState extends State<FullScreenPlayer>
                     return GestureDetector(
                       onTap: () => _setPlaybackSpeed(speed),
                       child: Container(
-                        width: 70,
-                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 4,
+                          horizontal: 8,
+                        ),
                         decoration: BoxDecoration(
                           color: isSelected ? Colors.red : Colors.grey[800],
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
                           '${speed}x',
@@ -1013,7 +970,7 @@ class _FullScreenPlayerState extends State<FullScreenPlayer>
                     );
                   }).toList(),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 4),
                 TextButton(
                   onPressed: () {
                     setState(() {

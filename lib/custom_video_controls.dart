@@ -64,17 +64,7 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
 
   double _playbackSpeed = 1.0;
   bool _showSpeedDialog = false;
-  final List<double> _speedOptions = [
-    0.5,
-    0.75,
-    1.0,
-    1.25,
-    1.5,
-    1.75,
-    2.0,
-    2.5,
-    3.0,
-  ];
+  final List<double> _speedOptions = [0.5, 1.0, 1.5, 2.0];
 
   Duration? _lastHistoryPosition;
   DateTime _lastHistorySaveTime = DateTime.now();
@@ -902,8 +892,7 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
         color: Colors.black54,
         child: Center(
           child: Container(
-            width: 280,
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: Colors.grey[900],
               borderRadius: BorderRadius.circular(12),
@@ -928,11 +917,13 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
                     return GestureDetector(
                       onTap: () => _setPlaybackSpeed(speed),
                       child: Container(
-                        width: 70,
-                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 4,
+                          horizontal: 8,
+                        ),
                         decoration: BoxDecoration(
                           color: isSelected ? Colors.red : Colors.grey[800],
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
                           '${speed}x',
@@ -948,7 +939,7 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
                     );
                   }).toList(),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 4),
                 TextButton(
                   onPressed: () {
                     setState(() {

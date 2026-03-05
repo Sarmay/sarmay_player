@@ -60,6 +60,16 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
   }
 
   void setupStreams() {
+    if (mounted) {
+      setState(() {
+        _duration = widget.player.videoDuration;
+        _position = widget.player.videoPosition;
+        _isPlaying = widget.player.videoIsPlaying;
+        _isBuffering = widget.player.videoIsBuffering;
+        _showTip = widget.player.showTip;
+      });
+    }
+
     _durationSubscription = widget.player.duration.listen((Duration duration) {
       if (mounted) {
         setState(() {

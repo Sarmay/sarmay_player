@@ -627,6 +627,7 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             _buildTopControls(),
             _buildCenterControls(),
@@ -648,7 +649,7 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
           else
             IconButton(
               padding: EdgeInsetsGeometry.zero,
-              icon: const Icon(Icons.cast_connected, color: Colors.white),
+              icon: const Icon(Icons.cast, color: Colors.white),
               onPressed: () {
                 if (!_showControls) {
                   _showControlsHandel();
@@ -663,33 +664,16 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
   }
 
   Widget _buildCenterControls() {
-    return Expanded(
-      child: Center(
-        child: _isBuffering && !_isSeeking && !_isLongPressSeeking
-            ? SizedBox(
-                width: 60,
-                height: 60,
-                child: const CircularProgressIndicator(color: Colors.white),
-              )
-            : IconButton(
-                padding: EdgeInsetsGeometry.zero,
-                icon: Icon(
-                  _isPlaying
-                      ? Icons.pause_circle_filled
-                      : Icons.play_circle_filled,
-                  color: Colors.white,
-                  size: 60,
-                ),
-                onPressed: () {
-                  if (!_showControls) {
-                    _showControlsHandel();
-                    return;
-                  }
-                  widget.player.playOrPause();
-                },
-              ),
-      ),
-    );
+    if( _isBuffering && !_isSeeking && !_isLongPressSeeking){
+      return Center(
+        child: SizedBox(
+          width: 40,
+          height: 40,
+          child: const CircularProgressIndicator(color: Colors.white),
+        ),
+      );
+    }
+    return SizedBox.shrink();
   }
 
   Widget _buildBottomControls() {
@@ -700,6 +684,19 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
           Text(
             _formatDuration(_isSeeking ? _seekPosition : _position),
             style: const TextStyle(color: Colors.white),
+          ),
+          IconButton(
+            padding: EdgeInsetsGeometry.zero,
+            icon: Icon(_isPlaying
+                ? Icons.pause
+                : Icons.play_arrow, color: Colors.white),
+            onPressed: () {
+              if (!_showControls) {
+                _showControlsHandel();
+                return;
+              }
+              widget.player.playOrPause();
+            },
           ),
           Expanded(
             child: SliderTheme(

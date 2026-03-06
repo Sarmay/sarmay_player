@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+import 'package:sarmay_player/cast_device_dialog.dart';
 import 'package:screen_brightness/screen_brightness.dart';
 import 'package:sarmay_player/media_player.dart';
 import 'package:volume_controller/volume_controller.dart';
@@ -21,6 +23,8 @@ class _FullScreenPlayerState extends State<FullScreenPlayer>
     with WidgetsBindingObserver {
   bool _showControls = false;
   Timer? _hideControlsTimer;
+
+  OverlayEntry? _castOverlayEntry;
 
   Duration _position = Duration.zero;
   Duration _duration = Duration.zero;
@@ -661,11 +665,8 @@ class _FullScreenPlayerState extends State<FullScreenPlayer>
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _buildTopControls(),
-            _buildCenterControls(),
-            _buildBottomControls(),
-          ],
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [_buildTopControls(), _buildBottomControls()],
         ),
       ),
     );
@@ -698,43 +699,44 @@ class _FullScreenPlayerState extends State<FullScreenPlayer>
               overflow: TextOverflow.ellipsis,
             ),
           ),
+          if (!Platform.isIOS)
+            IconButton(
+              padding: EdgeInsetsGeometry.zero,
+              icon: const Icon(Icons.cast, color: Colors.white),
+              onPressed: () {
+                if (!_showControls) {
+                  _showControlsHandel();
+                  return;
+                }
+                _showCastDialog(context);
+              },
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildCenterControls() {
-    return Expanded(
-      child: Center(
-        child: _isBuffering && !_isSeeking && !_isLongPressSeeking
-            ? const SizedBox(
-                width: 60,
-                height: 60,
-                child: CircularProgressIndicator(color: Colors.white),
-              )
-            : SizedBox(
-                width: 100,
-                height: 100,
-                child: IconButton(
-                  padding: EdgeInsetsGeometry.zero,
-                  icon: Icon(
-                    _isPlaying
-                        ? Icons.pause_circle_filled
-                        : Icons.play_circle_filled,
-                    color: Colors.white,
-                    size: 80,
-                  ),
-                  onPressed: () {
-                    if (!_showControls) {
-                      _showControlsHandel();
-                      return;
-                    }
-                    widget.player.playOrPause();
-                  },
-                ),
-              ),
+  void _showCastDialog(BuildContext context) {
+    bool isPlaying = _isPlaying;
+    if (isPlaying) {
+      widget.player.pause();
+    }
+    _castOverlayEntry = OverlayEntry(
+      builder: (context) => CastDeviceDialog(
+        playUrl: widget.player.mediaUrl.url,
+        tipTime: widget.player.tipTime,
+        castWidget: widget.player.castWidget,
+        devicesType: widget.player.castDevicesType,
+        onClose: () {
+          _castOverlayEntry?.remove();
+          _castOverlayEntry = null;
+          if (isPlaying) {
+            widget.player.play();
+          }
+        },
       ),
     );
+    Overlay.of(context).insert(_castOverlayEntry!);
   }
 
   Widget _buildBottomControls() {
@@ -745,6 +747,20 @@ class _FullScreenPlayerState extends State<FullScreenPlayer>
           Text(
             _formatDuration(_isSeeking ? _seekPosition : _position),
             style: const TextStyle(color: Colors.white),
+          ),
+          IconButton(
+            padding: EdgeInsetsGeometry.zero,
+            icon: Icon(
+              _isPlaying ? Icons.pause : Icons.play_arrow,
+              color: Colors.white,
+            ),
+            onPressed: () {
+              if (!_showControls) {
+                _showControlsHandel();
+                return;
+              }
+              widget.player.playOrPause();
+            },
           ),
           Expanded(
             child: SliderTheme(

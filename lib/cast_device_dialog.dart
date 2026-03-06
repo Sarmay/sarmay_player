@@ -72,14 +72,14 @@ class _CastDeviceDialogState extends State<CastDeviceDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
     return Material(
       color: Colors.black54,
       child: Center(
         child: Container(
-          width: 400,
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.8,
-          ),
+          width: screenWidth * 0.8,
+          constraints: BoxConstraints(maxHeight: screenHeight * 0.8),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(8),

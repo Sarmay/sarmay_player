@@ -546,33 +546,54 @@ class _FullScreenPlayerState extends State<FullScreenPlayer>
           _onWillPop();
         }
       },
-      child: Scaffold(
-        backgroundColor: Colors.black,
-        body: GestureDetector(
-          onPanStart: _onPanStart,
-          onPanUpdate: _onPanUpdate,
-          onPanEnd: _onPanEnd,
-          behavior: HitTestBehavior.opaque,
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: Video(controller: widget.player.videoController),
+      child: Scaffold(backgroundColor: Colors.black, body: _buildContent()),
+    );
+  }
+
+  Widget _buildContent() {
+    if (_showTip) {
+      Widget tipWidget = widget.player.tipWidget != null
+          ? SizedBox(
+              height: double.infinity,
+              width: double.infinity,
+              child: widget.player.tipWidget,
+            )
+          : Container(
+              color: const Color(0xB3000000),
+              height: double.infinity,
+              width: double.infinity,
+              child: Center(
+                child: Text(
+                  "默认提示信息,提示时间:${widget.player.tipTime?.inSeconds}秒",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
-              _buildGestureAreas(),
-              if (_showControls ||
-                  _isBuffering ||
-                  _isSeeking ||
-                  _isLongPressSeeking)
-                _buildControlsOverlay(),
-              if (_isSeeking) _buildSeekIndicator(),
-              if (_seekProgress != 0.0) _buildSeekHint(),
-              if (_showTip) _backIconWidget(),
-              if (_showBrightnessIndicator) _buildBrightnessIndicator(),
-              if (_showVolumeIndicator) _buildVolumeIndicator(),
-              if (_showSpeedDialog) _buildSpeedDialog(),
-            ],
+            );
+      return Stack(children: [tipWidget, _backIconWidget()]);
+    }
+    return GestureDetector(
+      onPanStart: _onPanStart,
+      onPanUpdate: _onPanUpdate,
+      onPanEnd: _onPanEnd,
+      behavior: HitTestBehavior.opaque,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: Video(controller: widget.player.videoController),
           ),
-        ),
+          _buildGestureAreas(),
+          if (_showControls ||
+              _isBuffering ||
+              _isSeeking ||
+              _isLongPressSeeking)
+            _buildControlsOverlay(),
+          if (_isSeeking) _buildSeekIndicator(),
+          if (_seekProgress != 0.0) _buildSeekHint(),
+          if (_showBrightnessIndicator) _buildBrightnessIndicator(),
+          if (_showVolumeIndicator) _buildVolumeIndicator(),
+          if (_showSpeedDialog) _buildSpeedDialog(),
+        ],
       ),
     );
   }
@@ -627,26 +648,6 @@ class _FullScreenPlayerState extends State<FullScreenPlayer>
   }
 
   Widget _buildControlsOverlay() {
-    if (_showTip) {
-      Widget tipWidget = widget.player.tipWidget != null
-          ? SizedBox(
-              height: double.infinity,
-              width: double.infinity,
-              child: widget.player.tipWidget,
-            )
-          : Container(
-              color: const Color(0xB3000000),
-              child: Center(
-                child: Text(
-                  "默认提示信息,提示时间:${widget.player.tipTime?.inSeconds}",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
-            );
-      return tipWidget;
-    }
-
     return AnimatedOpacity(
       opacity: _showControls || _isBuffering ? 1.0 : 0.0,
       duration: const Duration(milliseconds: 300),

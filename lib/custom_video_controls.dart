@@ -664,7 +664,7 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
   }
 
   Widget _buildCenterControls() {
-    if( _isBuffering && !_isSeeking && !_isLongPressSeeking){
+    if (_isBuffering && !_isSeeking && !_isLongPressSeeking) {
       return Center(
         child: SizedBox(
           width: 40,
@@ -687,9 +687,10 @@ class _CustomVideoControlsState extends State<CustomVideoControls> {
           ),
           IconButton(
             padding: EdgeInsetsGeometry.zero,
-            icon: Icon(_isPlaying
-                ? Icons.pause
-                : Icons.play_arrow, color: Colors.white),
+            icon: Icon(
+              _isPlaying ? Icons.pause : Icons.play_arrow,
+              color: Colors.white,
+            ),
             onPressed: () {
               if (!_showControls) {
                 _showControlsHandel();

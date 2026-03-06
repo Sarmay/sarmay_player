@@ -39,6 +39,7 @@ class _VideoListPageState extends State<VideoListPage> {
         title: "Aliyun",
         url: "http://player.alicdn.com/video/aliyunmedia.mp4",
         play: true,
+        tipTime: Duration(seconds: 50)
       ),
       MediaUrl(
         title: "m3u8",
@@ -128,8 +129,8 @@ class _VideoListPageState extends State<VideoListPage> {
       MediaUrl(title: "assets file", url: "asset:///assets/birthday.mp4"),
       MediaUrl(title: "assets file 404", url: "asset:///assets/beebee.mp4"),
       MediaUrl(
-        title: "Protocol not found",
-        url: "noprotocol://assets/butterfly.mp4",
+        title: "竖向短剧并且超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题超长标题",
+        url: "https://cdn.wlcdn88.com:777/dfc69d3a/index.m3u8",
       ),
     ]);
   }
